@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"monkey/lexer"
+	"monkey/parser"
 	"monkey/token"
 )
 
