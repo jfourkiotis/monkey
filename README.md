@@ -1,5 +1,6 @@
 Writing an interpreter in Go
 
+v0.2.8d     - Parse function literals
 v0.2.8c     - Parse if/else expressions
 v0.2.8b     - Parse grouped expressions
 v0.2.8a     - Parse boolean expressions
