@@ -1,5 +1,6 @@
 Writing an interpreter in Go
 
+v0.2.9      - Read - Parse - Print - Loop
 v0.2.8e     - Parse call expressions
 v0.2.8d     - Parse function literals
 v0.2.8c     - Parse if/else expressions
