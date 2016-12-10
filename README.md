@@ -1,5 +1,6 @@
 Writing an interpreter in Go
 
+v0.3.8      - REPL : basic error handling
 v0.3.7      - REPL : support for return statements
 v0.3.6      - REPL : support for conditionals
 v0.3.5d     - REPL : support for infix expressions
