@@ -1,5 +1,6 @@
 Writing an interpreter in Go
 
+v0.3.5b     - REPL : support for booleans (and null)
 v0.3.5a     - REPL : support for integers
 v0.2.9      - Read - Parse - Print - Loop
 v0.2.8e     - Parse call expressions
