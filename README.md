@@ -1,5 +1,20 @@
 ## Writing an interpreter in Go - Monkey ##
 
+### The Monkey programming language & interpreter
+
+#### features (copied from the book)
+
+* C-like syntax
+* variable bindings
+* integer, booleans and strings
+* arithmetic expressions
+* built-in functions (a few)
+* first-class and higher-order functions
+* closures
+* arrays
+* dictionaries
+
+#### changelog
 * v0.4.6      - REPL : `puts` builtin function
 * v0.4.4b     - REPL : support for hash literals and indexing
 * v0.4.4a     - REPL : support for array literals
