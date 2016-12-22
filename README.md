@@ -1,5 +1,6 @@
 ## Writing an interpreter in Go - Monkey ##
 
+* v0.4.6      - REPL : `puts` builtin function
 * v0.4.4b     - REPL : support for hash literals and indexing
 * v0.4.4a     - REPL : support for array literals
 * v0.4.3      - REPL : support for builtin functions
