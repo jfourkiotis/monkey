@@ -1,4 +1,7 @@
 syntax: glob
 monkey
 *.swp
+catch
+build
+.DS_Store
 
