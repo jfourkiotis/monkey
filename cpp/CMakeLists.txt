@@ -26,14 +26,17 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     if (${CMAKE_SYSTEM_NAME} MATCHES Darwin)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
 endif()
 
-set(HEADERS)
+set(HEADERS
+    token.h
+    lexer.h
+    repl.h)
 set(SOURCES main.cpp)
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 add_dependencies(${PROJECT_NAME} catch)
