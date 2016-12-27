@@ -1,5 +1,5 @@
-== `CppMonkey` - An interpreter for the `Monkey` programming language
+## `CMonkey` - An interpreter for the `Monkey` programming language
 
-=== Changeset ===
-v0.1.5 The lexer is complete.
+### Changeset
+* v0.1.5 The lexer is complete.
 
