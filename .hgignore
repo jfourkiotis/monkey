@@ -4,4 +4,5 @@ monkey
 catch
 build
 .DS_Store
+target/
 
