@@ -1,0 +1,9 @@
+{
+	"name": "monkey",
+	"authors": [
+		"John Fourkiotis"
+	],
+	"description": "An interpreter for the Monkey programming language",
+	"copyright": "Copyright © 2016, John Fourkiotis",
+	"license": "MIT"
+}
