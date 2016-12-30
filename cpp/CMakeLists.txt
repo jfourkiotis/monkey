@@ -36,7 +36,9 @@ endif()
 set(HEADERS
     token.h
     lexer.h
-    repl.h)
+    repl.h
+    ast.h
+    parser.h)
 set(SOURCES main.cpp)
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 add_dependencies(${PROJECT_NAME} catch)

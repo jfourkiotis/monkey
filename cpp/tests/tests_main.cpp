@@ -6,6 +6,8 @@
 
 #include "../token.h"
 #include "../lexer.h"
+#include "../ast.h"
+#include "../parser.h"
 
 // Lexer tests
 TEST_CASE("lexer", "[lexer]") {
@@ -125,4 +127,46 @@ TEST_CASE("lexer", "[lexer]") {
     }
 }
 
+TEST_CASE("parser", "[LetStatement]") {
+    using std::string;
+    using namespace token;
+
+    string input = "let x = 5;"
+    "let y = 10;"
+    "let foobar = 838383;";
+
+    lexer::Lexer l{input};
+    Parser p{l};
+
+    auto program = p.ParseProgram();
+    REQUIRE(program);
+    REQUIRE(program->size() == 3);
+
+    struct {
+        string expected_identifier;
+    } tests[] = {
+        "x",
+        "y",
+        "foobar",
+    };
+
+    auto testLetStatement = [](auto stmt, auto str) -> bool {
+        REQUIRE(stmt->TokenLiteral() == "let");
+
+        auto *letStmt = dynamic_cast<ast::LetStatement *>(stmt);
+        REQUIRE(letStmt != nullptr);
+        REQUIRE(letStmt->Name()->Value() == str);
+        REQUIRE(letStmt->Name()->TokenLiteral() == str);
+
+        return true;
+    };
+
+    SECTION("expected let statement") {
+        for (int i = 0; i != sizeof(tests)/sizeof(tests[0]); ++i)
+        {
+            auto stmt = (*program)[i];
+            testLetStatement(stmt, tests[i].expected_identifier);
+        }
+    }
+}
 
