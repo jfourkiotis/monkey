@@ -15,6 +15,7 @@ class LetStatementSpec extends FlatSpec with Matchers {
     val parser = new Parser(lexer)
     
     val program = parser.parseProgram()
+    checkParserErrors(parser)
     
     program should not be (null)
     program.statements.size should be (3)
@@ -36,5 +37,14 @@ class LetStatementSpec extends FlatSpec with Matchers {
     letStmt.name.tokenLiteral should be (name)
 
     true
+  }
+
+  def checkParserErrors(p: Parser) {
+    val errors = p.errors()
+    if (!errors.isEmpty) {
+      info(s"the parser has ${errors.size} errors")
+      errors.foreach(err => info(s"$err"))
+      errors.size should be (0)
+    }
   }
 }

@@ -3,8 +3,9 @@ package monkey
 class Parser(l: Lexer) {
   private var curToken = l.nextToken()
   private var peekToken = l.nextToken()
+  private var errors_ = List[String]()
 
-  def nextToken() {
+  private def nextToken() {
     curToken = peekToken
     peekToken = l.nextToken()
   }
@@ -22,7 +23,14 @@ class Parser(l: Lexer) {
     return new Program(statements)
   }
 
-  def parseStatement(): Statement = 
+  def errors() = errors_
+
+  private def peekError(t: token.TokenType) {
+    val msg = s"expected next token to be $t, got ${peekToken.ttype} instead"
+    errors_ = errors_ :+ msg
+  }
+
+  private def parseStatement(): Statement = 
     if (curToken.ttype == token.LET) {
       parseLetStatement()
     } else null
@@ -54,5 +62,8 @@ class Parser(l: Lexer) {
     if (peekTokenIs(t)) {
       nextToken(); 
       true
-    } else false
+    } else {
+      peekError(t)
+      false
+    }
 }
