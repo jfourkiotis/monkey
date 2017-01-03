@@ -33,6 +33,8 @@ class Parser(l: Lexer) {
   private def parseStatement(): Statement = 
     if (curToken.ttype == token.LET) {
       parseLetStatement()
+    } else if (curToken.ttype == token.RETURN) {
+      parseReturnStatement()
     } else null
 
   private def parseLetStatement(): LetStatement = {
@@ -54,6 +56,18 @@ class Parser(l: Lexer) {
       }
       stmt
     }
+  }
+
+  private def parseReturnStatement(): ReturnStatement = {
+    var stmt = ReturnStatement(curToken, null)
+
+    nextToken()
+
+    while (!curTokenIs(token.SEMICOLON)) {
+      nextToken()
+    }
+
+    stmt
   }
 
   private def curTokenIs(t: token.TokenType) = curToken.ttype == t

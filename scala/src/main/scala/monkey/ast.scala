@@ -21,3 +21,7 @@ case class LetStatement(token: Token, name: Identifier, value: Expression) exten
   override def tokenLiteral = token.literal
 }
 
+case class ReturnStatement(token: Token, value: Expression) extends Statement {
+  override def tokenLiteral = token.literal
+}
+
