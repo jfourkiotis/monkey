@@ -76,3 +76,22 @@ public:
     const(Identifier) name() const @property { return name_; }
 }
 
+class ReturnStatement : Statement {
+private:
+    Token token_;
+    Expression expression_;
+
+public:
+    @disable this();
+
+    this(Token token, Expression expression) {
+        token_ = token;
+        expression_ = expression;
+    }
+
+    override string tokenLiteral() const {
+        return token_.literal;
+    }
+}
+
+

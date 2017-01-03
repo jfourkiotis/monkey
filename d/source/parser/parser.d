@@ -9,6 +9,13 @@ private:
     Lexer lexer_;
     Token curToken_;
     Token peekToken_;
+    string[] errors_;
+
+    void peekError(TokenType t) {
+        import std.string;
+        string msg = format("expected next token to be %s, got %s instead", t, peekToken_.type);
+        errors_ ~= msg;
+    }
 
     void nextToken() {
         curToken_ = peekToken_;
@@ -58,6 +65,7 @@ private:
             nextToken();
             return true;
         } else {
+            peekError(t);
             return false;
         }
     }
@@ -69,6 +77,8 @@ public:
         nextToken();
         nextToken();
     }
+
+    string[] errors() { return errors_.dup; }
 
     Program parseProgram() {
         Statement[] statements;
@@ -86,7 +96,7 @@ public:
 }
 
 unittest {
-    import std.stdio : writeln;
+    import std.stdio : writeln, writefln;
     import std.string : format;
 
     string input = "let x = 5;" ~
@@ -96,6 +106,20 @@ unittest {
     auto l = Lexer(input);
     auto p = Parser(l);
     auto program = p.parseProgram();
+
+
+    void checkParserErrors(Parser p) {
+        auto errors = p.errors();
+        if (errors.length)
+        {
+            writefln("the parser has %d errors", errors.length);
+            foreach(msg; errors) {
+                writefln("parser error: %s", msg);
+            }
+            assert(errors.length == 0, "the parser encountered errors");
+        }
+    }
+    checkParserErrors(p);
 
     assert(program !is null, "parseProgram() returned null");
     assert(program.length == 3, "program.statements does not contain 3 statements");
