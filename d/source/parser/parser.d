@@ -26,12 +26,14 @@ private:
         switch (curToken_.type) {
         case LET:
             return parseLetStatement();
+        case RETURN:
+            return parseReturnStatement();
         default:
             return null;
         }
     }
 
-    Statement parseLetStatement() {
+    LetStatement parseLetStatement() {
         auto letToken = curToken_;
         if (!expectPeek(IDENT)) {
             return null;
@@ -50,6 +52,18 @@ private:
         }
 
         return new LetStatement(letToken, name, null);
+    }
+
+    ReturnStatement parseReturnStatement() {
+        auto retToken = curToken_;
+
+        nextToken();
+
+        while(!curTokenIs(SEMICOLON)) {
+            nextToken();
+        }
+
+        return new ReturnStatement(retToken, null);
     }
 
     bool curTokenIs(TokenType t) const {
@@ -96,17 +110,9 @@ public:
 }
 
 unittest {
+
     import std.stdio : writeln, writefln;
     import std.string : format;
-
-    string input = "let x = 5;" ~
-    "let y = 10;" ~
-    "let foobar = 838383;";
-
-    auto l = Lexer(input);
-    auto p = Parser(l);
-    auto program = p.parseProgram();
-
 
     void checkParserErrors(Parser p) {
         auto errors = p.errors();
@@ -119,30 +125,62 @@ unittest {
             assert(errors.length == 0, "the parser encountered errors");
         }
     }
-    checkParserErrors(p);
 
-    assert(program !is null, "parseProgram() returned null");
-    assert(program.length == 3, "program.statements does not contain 3 statements");
+    {
+        string input = "let x = 5;" ~
+            "let y = 10;" ~
+            "let foobar = 838383;";
 
-    struct T{ string expectedIdentifier; } 
-    T[] tests = [
-        T("x"),
-        T("y"),
-        T("foobar")
-    ];
+        auto l = Lexer(input);
+        auto p = Parser(l);
+        auto program = p.parseProgram();
 
-    bool testLetStatement(Statement stmt, string name) {
-        assert(stmt.tokenLiteral == "let", "stmt.tokenLiteral is not 'let'");
-        auto letStmt = cast(LetStatement) stmt;
-        assert(letStmt !is null, "stmt is not a LetStatement");
-        assert(letStmt.name.value == name, format("letStmt.name.value not '%s'. got '%s'", name, letStmt.name.value));
-        assert(letStmt.name.tokenLiteral == name, format("letStmt.name.tokenLiteral not '%s'. got '%s'", name, letStmt.name.tokenLiteral));
-        return false;
+        checkParserErrors(p);
+
+        assert(program !is null, "parseProgram() returned null");
+        assert(program.length == 3, "program.statements does not contain 3 statements");
+
+        struct T{ string expectedIdentifier; } 
+        T[] tests = [
+            T("x"),
+            T("y"),
+            T("foobar")
+        ];
+
+        bool testLetStatement(Statement stmt, string name) {
+            assert(stmt.tokenLiteral == "let", "stmt.tokenLiteral is not 'let'");
+            auto letStmt = cast(LetStatement) stmt;
+            assert(letStmt !is null, "stmt is not a LetStatement");
+            assert(letStmt.name.value == name, format("letStmt.name.value not '%s'. got '%s'", name, letStmt.name.value));
+            assert(letStmt.name.tokenLiteral == name, format("letStmt.name.tokenLiteral not '%s'. got '%s'", name, letStmt.name.tokenLiteral));
+            return false;
+        }
+
+        foreach(i, t; tests) {
+            auto stmt = program[i];
+            testLetStatement(stmt, t.expectedIdentifier);
+        }
     }
 
-    foreach(i, t; tests) {
-        auto stmt = program[i];
-        testLetStatement(stmt, t.expectedIdentifier);
+    {// RETURN
+        string input = "return 5;" ~
+        "return 10;" ~
+        "return 993322;";
+
+        auto l = Lexer(input);
+        auto p = Parser(l);
+        auto program = p.parseProgram();
+        checkParserErrors(p);
+
+        assert(program !is null, "parseProgram() return null");
+        assert(program.length == 3, "program.statements does not contain 3 statements");
+
+        for(auto i = 0; i != program.length; ++i) {
+            auto stmt = program[i];
+            auto returnStmt = cast(ReturnStatement) stmt;
+            assert(returnStmt !is null, format("stmt is not a ReturnStatement. got '%s'", returnStmt));
+            assert(returnStmt.tokenLiteral == "return", format("returnStmt.tokenLiteral not 'return'. got '%s'", returnStmt.tokenLiteral));
+        }
     }
 }
 
