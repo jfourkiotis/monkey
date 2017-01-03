@@ -127,7 +127,18 @@ TEST_CASE("lexer", "[lexer]") {
     }
 }
 
-TEST_CASE("parser", "[LetStatement]") {
+void checkParserErrors(const Parser &p) {
+    auto errors = p.Errors();
+    if (!errors.empty()) {
+        INFO("the parser had " << errors.size() << " errors")
+        for(const auto& msg : errors) {
+            INFO("parser error: " << msg);
+        }
+        REQUIRE(errors.empty());
+    }
+}
+
+TEST_CASE("LetStatement", "[Parsing,LetStatement]") {
     using std::string;
     using namespace token;
 
@@ -139,6 +150,7 @@ TEST_CASE("parser", "[LetStatement]") {
     Parser p{l};
 
     auto program = p.ParseProgram();
+    checkParserErrors(p);
     REQUIRE(program);
     REQUIRE(program->size() == 3);
 
@@ -161,11 +173,34 @@ TEST_CASE("parser", "[LetStatement]") {
         return true;
     };
 
-    SECTION("expected let statement") {
+    SECTION("expected let statements") {
         for (int i = 0; i != sizeof(tests)/sizeof(tests[0]); ++i)
         {
             auto stmt = (*program)[i];
             testLetStatement(stmt, tests[i].expected_identifier);
+        }
+    }
+}
+
+TEST_CASE("ReturnStatement", "[Parsing,ReturnStatement]") {
+    using std::string;
+    
+    string input = "return 5;"
+    "return 10;"
+    "return 993322;";
+
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+    checkParserErrors(p);
+
+    SECTION("expected return statements") {
+        REQUIRE(program->size() == 3);
+
+        for (auto i = 0; i != program->size(); ++i) {
+            auto stmt = dynamic_cast<ast::ReturnStatement *>((*program)[i]);
+            REQUIRE(stmt);
+            REQUIRE(stmt->TokenLiteral() == "return");
         }
     }
 }

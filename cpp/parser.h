@@ -2,6 +2,8 @@
 #define MONKEY_PARSER_H_INCLUDED
 
 #include <memory>
+#include <vector>
+#include <string>
 #include "token.h"
 #include "lexer.h"
 #include "ast.h"
@@ -28,7 +30,15 @@ public:
 
         return make_unique<ast::Program>(move(statements));
     }
+
+    using ErrorList = std::vector<std::string>;
+    ErrorList Errors() const { return errors_; }
 private:
+
+    void peekError(token::TokenType t) {
+        auto msg = "expected next token to be " + t + ". got " + peekToken_.type + " instead";
+        errors_.emplace_back(msg);
+    }
 
     void nextToken() {
         curToken_ = peekToken_;
@@ -38,6 +48,8 @@ private:
     std::unique_ptr<ast::Statement> parseStatement() {
         if (curToken_.type == token::LET) {
             return parseLetStatement();
+        } else if (curToken_.type == token::RETURN) {
+            return parseReturnStatement();
         }
         return nullptr;
     }
@@ -66,6 +78,19 @@ private:
         return make_unique<ast::LetStatement>(let_token, move(identifier), nullptr);
     }
 
+    std::unique_ptr<ast::Statement> parseReturnStatement() {
+        auto return_token = curToken_;
+        nextToken();
+
+        // TODO: we're skipping the expressions until we encounter
+        // a semicolon
+        while (!curTokenIs(token::SEMICOLON)) {
+            nextToken();
+        }
+
+        return std::make_unique<ast::ReturnStatement>(return_token, nullptr);
+    }
+
     bool curTokenIs(token::TokenType type) const {
         return curToken_.type == type;
     }
@@ -79,6 +104,7 @@ private:
             nextToken();
             return true;
         } else {
+            peekError(type);
             return false;
         }
     }
@@ -86,6 +112,7 @@ private:
     lexer::Lexer lexer_;
     token::Token curToken_ = lexer_.NextToken();
     token::Token peekToken_ = lexer_.NextToken();
+    ErrorList errors_;
 };//~ Parser
 
 #endif // MONKEY_PARSER_H_INCLUDED

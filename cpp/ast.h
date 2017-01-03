@@ -63,6 +63,16 @@ private:
     std::unique_ptr<Expression> expression_;
 };//~ LetStatement
 
+class ReturnStatement : public Statement {
+public:
+    ReturnStatement(token::Token token, std::unique_ptr<Expression> expression)
+        : token_(token), expression_(std::move(expression)) {}
+    std::string TokenLiteral() const override { return token_.literal; }
+private:
+    token::Token token_;
+    std::unique_ptr<Expression> expression_;
+};//~ ReturnStatement
+
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED
 
