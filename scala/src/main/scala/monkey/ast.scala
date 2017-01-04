@@ -16,12 +16,16 @@ case class Program(statements: List[Statement]) extends Node {
 case class Identifier(token: Token, value: String) extends Expression {
   override def tokenLiteral = token.literal
 }
-
+// let x = 5;
 case class LetStatement(token: Token, name: Identifier, value: Expression) extends Statement {
   override def tokenLiteral = token.literal
 }
-
+// return x + 2;
 case class ReturnStatement(token: Token, value: Expression) extends Statement {
+  override def tokenLiteral = token.literal
+}
+// x + 10;
+case class ExpressionStatement(token: Token, value: Expression) extends Statement {
   override def tokenLiteral = token.literal
 }
 
