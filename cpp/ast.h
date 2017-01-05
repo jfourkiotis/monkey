@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <initializer_list>
 
 #include "token.h"
 
@@ -13,6 +14,7 @@ class Node {
 public:
     virtual ~Node() {}
     virtual std::string TokenLiteral() const = 0;
+    virtual std::string ToString() const = 0;
 };//~ Node
 
 class Statement : public Node {}; // dummy interface
@@ -26,6 +28,14 @@ public:
 
     std::string TokenLiteral() const override {
         return statements_.empty() ? "" : statements_[0]->TokenLiteral();
+    }
+
+    std::string ToString() const override {
+        std::string buf;
+        for (const auto& stmt : statements_) {
+            buf.append(stmt->ToString());
+        }
+        return buf;
     }
 
     Statements::size_type size() const { return statements_.size(); }
@@ -43,6 +53,7 @@ public:
     Identifier(token::Token token, const std::string& value) : token_(token), value_(value) {}
     std::string TokenLiteral() const override { return token_.literal; }
     std::string Value() const { return value_; }
+    std::string ToString() const override { return Value(); }
 private:
     token::Token token_;
     std::string value_;
@@ -56,6 +67,22 @@ public:
         : token_(token), name_(std::move(name)), expression_(std::move(expr)) {}
     
     std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override {
+        std::string buf;
+
+        buf.append(TokenLiteral());
+        buf.append(1, ' ');
+        buf.append(Name()->ToString());
+        buf.append(" = ");
+
+        if (expression_) {
+            buf.append(expression_->ToString());
+        }
+
+        buf.append(1, ';');
+        return buf;
+    }
     const Identifier* Name() const { return name_.get(); }
 private:
     token::Token token_;
@@ -67,11 +94,38 @@ class ReturnStatement : public Statement {
 public:
     ReturnStatement(token::Token token, std::unique_ptr<Expression> expression)
         : token_(token), expression_(std::move(expression)) {}
+    
     std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override {
+        std::string buf;
+
+        buf.append(TokenLiteral());
+        buf.append(1, ' ');
+        if (expression_) {
+            buf.append(expression_->ToString());
+        }
+
+        buf.append(1, ';');
+        return buf;
+    }
 private:
     token::Token token_;
     std::unique_ptr<Expression> expression_;
 };//~ ReturnStatement
+
+class ExpressionStatement : public Statement {
+public:
+    ExpressionStatement(token::Token token, std::unique_ptr<Expression> expression)
+        : token_(token), expression_(std::move(expression)) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+    
+    std::string ToString() const override { return expression_ ? expression_->ToString() : ""; }
+private:
+    token::Token token_;
+    std::unique_ptr<Expression> expression_;
+};
 
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED

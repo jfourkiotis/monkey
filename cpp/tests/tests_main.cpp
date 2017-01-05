@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <memory>
 
 #include "../token.h"
 #include "../lexer.h"
@@ -203,5 +204,24 @@ TEST_CASE("ReturnStatement", "[Parsing,ReturnStatement]") {
             REQUIRE(stmt->TokenLiteral() == "return");
         }
     }
+}
+
+TEST_CASE("ToString", "[Ast]") {
+    using std::make_unique;
+    using namespace token;
+    using namespace ast;
+    using std::move;
+
+    Program::Statements ls;
+    ls.push_back(
+            make_unique<LetStatement>(
+                    Token(LET, "let"),
+                    make_unique<Identifier>(Token(IDENT, "myVar"), "myVar"),
+                    make_unique<Identifier>(Token(IDENT, "anotherVar"), "anotherVar")
+            )
+    );
+
+    auto program = make_unique<Program>(move(ls));
+    REQUIRE(program->ToString() == "let myVar = anotherVar;");
 }
 
