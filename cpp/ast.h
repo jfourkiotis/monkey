@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <initializer_list>
+#include <cstdint>
 
 #include "token.h"
 
@@ -122,10 +123,26 @@ public:
     std::string TokenLiteral() const override { return token_.literal; }
     
     std::string ToString() const override { return expression_ ? expression_->ToString() : ""; }
+
+    const Expression* BorrowedExpression() const { return expression_.get(); }
 private:
     token::Token token_;
     std::unique_ptr<Expression> expression_;
-};
+};//~ ExpressionStatement
+
+class IntegerLiteral : public Expression {
+public:
+    IntegerLiteral(token::Token token, long value) : token_(token), value_(value) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override { return token_.literal; }
+
+    long Value() const { return value_; }
+private:
+    token::Token token_;
+    long value_;
+};//~ IntegerLiteral
 
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED

@@ -225,3 +225,45 @@ TEST_CASE("ToString", "[Ast]") {
     REQUIRE(program->ToString() == "let myVar = anotherVar;");
 }
 
+TEST_CASE("IdentifierExpression", "[Parsing]") {
+    using std::string;
+
+    string input = "foobar;";
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+    checkParserErrors(p);
+
+    REQUIRE(program->size() == 1);
+
+    auto stmt = dynamic_cast<ast::ExpressionStatement*>((*program)[0]);
+    REQUIRE(stmt);
+
+    auto id = dynamic_cast<const ast::Identifier*>(stmt->BorrowedExpression());
+    REQUIRE(id);
+    REQUIRE(id->Value() == "foobar");
+    REQUIRE(id->TokenLiteral() == "foobar");
+}
+
+TEST_CASE("IntegerLiteralExpression", "[Parsing]") {
+    using std::string;
+
+    string input = "5;";
+    lexer::Lexer l{input};
+    Parser p{l};
+
+    auto program = p.ParseProgram();
+    checkParserErrors(p);
+
+    REQUIRE(program->size() == 1);
+
+    auto stmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+    REQUIRE(stmt);
+
+    auto integer = dynamic_cast<const ast::IntegerLiteral *>(stmt->BorrowedExpression());
+    REQUIRE(integer);
+    REQUIRE(integer->Value() == 5);
+    REQUIRE(integer->TokenLiteral() == "5");
+}
+    
+
