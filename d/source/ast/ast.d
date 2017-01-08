@@ -161,6 +161,32 @@ public:
     override string toString() const {
         return expression_ !is null ? expression_.toString() : "";
     }
+
+    const(Expression) expression() const @property { return expression_; }
+}
+
+class IntegerLiteral : Expression {
+private:
+    Token token_;
+    long value_;
+
+public:
+    @disable this();
+
+    this(Token token, long value) {
+        token_ = token;
+        value_ = value;
+    }
+
+    override string tokenLiteral() const {
+        return token_.literal;
+    }
+
+    override string toString() const { 
+        return token_.literal;
+    }
+
+    long value() const @property { return value_; }
 }
 
 unittest {

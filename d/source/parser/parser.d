@@ -4,12 +4,35 @@ import token;
 import lexer;
 import ast;
 
+alias PrefixParseFn = Expression delegate();
+alias InfixParseFn = Expression function(Expression);
+
+enum Precedence {
+    LOWEST,
+    EQUALS,
+    LESSGREATER,
+    SUM,
+    PRODUCT,
+    PREFIX,
+    CALL
+}
+
 struct Parser {
 private:
     Lexer lexer_;
     Token curToken_;
     Token peekToken_;
     string[] errors_;
+    PrefixParseFn[TokenType] prefixParseFns_;
+    InfixParseFn[TokenType] infixParseFns_;
+
+    void registerPrefix(TokenType type, PrefixParseFn fn) {
+        prefixParseFns_[type] = fn;
+    }
+
+    void registerInfix(TokenType type, InfixParseFn fn) { 
+        infixParseFns_[type] = fn;
+    }
 
     void peekError(TokenType t) {
         import std.string;
@@ -29,7 +52,7 @@ private:
         case RETURN:
             return parseReturnStatement();
         default:
-            return null;
+            return parseExpressionStatement();
         }
     }
 
@@ -66,6 +89,26 @@ private:
         return new ReturnStatement(retToken, null);
     }
 
+    ExpressionStatement parseExpressionStatement() {
+        auto exprToken = curToken_;
+        auto expression = parseExpression(Precedence.LOWEST);
+
+        if (peekTokenIs(SEMICOLON)) {
+            nextToken();
+        }
+
+        return new ExpressionStatement(exprToken, expression);
+    }
+
+    Expression parseExpression(int precedence) {
+        auto prefix = (curToken_.type in prefixParseFns_);
+        if (prefix is null) {
+            return null;
+        }
+
+        return (*prefix)();
+    }
+
     bool curTokenIs(TokenType t) const {
         return curToken_.type == t;
     }
@@ -83,6 +126,23 @@ private:
             return false;
         }
     }
+
+    Expression parseIdentifier() {
+        return new Identifier(curToken_, curToken_.literal);
+    }
+
+    Expression parseIntegerLiteral() {
+        import std.conv;
+    
+        try {
+            long val = to!long(curToken_.literal);
+            return new IntegerLiteral(curToken_, val);
+        } catch (Exception e) {
+            errors_ ~= e.msg;
+        }
+        return null;
+    }
+
 public:
     @disable this();
 
@@ -90,6 +150,9 @@ public:
         lexer_ = lexer;
         nextToken();
         nextToken();
+
+        registerPrefix(IDENT, delegate() { return new Identifier(curToken_, curToken_.literal); });
+        registerPrefix(INT, delegate() { return parseIntegerLiteral(); });
     }
 
     string[] errors() { return errors_.dup; }
@@ -172,15 +235,54 @@ unittest {
         auto program = p.parseProgram();
         checkParserErrors(p);
 
-        assert(program !is null, "parseProgram() return null");
+        assert(program !is null, "parseProgram() returned null");
         assert(program.length == 3, "program.statements does not contain 3 statements");
 
-        for(auto i = 0; i != program.length; ++i) {
+        for (auto i = 0; i != program.length; ++i) {
             auto stmt = program[i];
             auto returnStmt = cast(ReturnStatement) stmt;
             assert(returnStmt !is null, format("stmt is not a ReturnStatement. got '%s'", returnStmt));
             assert(returnStmt.tokenLiteral == "return", format("returnStmt.tokenLiteral not 'return'. got '%s'", returnStmt.tokenLiteral));
         }
+    }
+
+    {// IDENTIFIERS
+        string input = "foobar;";
+
+        auto l = Lexer(input);
+        auto p = Parser(l);
+        auto program = p.parseProgram();
+        checkParserErrors(p);
+
+        assert(program !is null, "parseProgram() returned null");
+        assert(program.length == 1, "program.statements does not contain 1 statements");
+
+        auto expressionStmt = cast(ExpressionStatement) program[0];
+        assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement. got '%s'", expressionStmt));
+        auto id = cast(Identifier) expressionStmt.expression;
+        assert(id !is null, format("exp not Identifier. got '%s'", id));
+        assert(id.value == "foobar");
+        assert(id.tokenLiteral == "foobar");
+    }
+
+    {// INTEGER LITERALS
+        string input = "5;";
+
+        auto l = Lexer(input);
+        auto p = Parser(l);
+        auto program = p.parseProgram();
+        checkParserErrors(p);
+
+        assert(program !is null, "parseProgram() returned null");
+        assert(program.length == 1, "program.statements does not contain 1 statements");
+
+        auto expressionStmt = cast(ExpressionStatement) program[0];
+        assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement. got '%s'", expressionStmt));
+
+        auto literal = cast(IntegerLiteral) expressionStmt.expression;
+        assert(literal !is null, format("exp not IntegerLiteral. got '%s'", literal));
+        assert(literal.value == 5);
+        assert(literal.tokenLiteral == "5");
     }
 }
 
