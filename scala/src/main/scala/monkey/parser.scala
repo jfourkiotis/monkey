@@ -1,9 +1,36 @@
 package monkey
 
 class Parser(l: Lexer) {
+
+  object Precedence {
+    val LOWEST = 0 
+    val EQUALS = 1 // ==
+    val LESSGREATER = 2 // > or <
+    val SUM = 3 // + 
+    val PRODUCT = 4 // *
+    val PREFIX  = 5 // -X or !X
+    val CALL    = 6 // myFunction(X)
+  }
+
+  type PrefixParseFn = () => Expression
+  type InfixParseFn = Expression => Expression
+
   private var curToken = l.nextToken()
   private var peekToken = l.nextToken()
   private var errors_ = List[String]()
+  private var prefixParseFns = Map[token.TokenType, PrefixParseFn]()
+  private var infixParseFns = Map[token.TokenType, InfixParseFn]()
+
+  private def registerPrefix(ttype: token.TokenType, fn: PrefixParseFn) {
+    prefixParseFns += (ttype -> fn)
+  }
+
+  private def registerInfix(ttype: token.TokenType, fn: InfixParseFn) {
+    infixParseFns += (ttype -> fn)
+  }
+
+  registerPrefix(token.IDENT, () => Identifier(curToken, curToken.literal))
+  registerPrefix(token.INT, parseIntegerLiteral)
 
   private def nextToken() {
     curToken = peekToken
@@ -35,7 +62,9 @@ class Parser(l: Lexer) {
       parseLetStatement()
     } else if (curToken.ttype == token.RETURN) {
       parseReturnStatement()
-    } else null
+    } else {
+      parseExpressionStatement()
+    }
 
   private def parseLetStatement(): LetStatement = {
     var stmt = LetStatement(curToken, null, null)
@@ -45,8 +74,8 @@ class Parser(l: Lexer) {
     } else {
       stmt = stmt.copy(name = Identifier(curToken, curToken.literal))
 
-      if (expectPeek(token.ASSIGN)) {
-        null
+      if (!expectPeek(token.ASSIGN)) {
+        return null
       } else {
         // TODO: we're skipping the expressions until we encounter
         // a semicolon
@@ -69,6 +98,35 @@ class Parser(l: Lexer) {
 
     stmt
   }
+
+  private def parseExpressionStatement(): ExpressionStatement = {
+    val current = curToken;
+    val expression = parseExpression(Precedence.LOWEST)
+    
+    if (peekTokenIs(token.SEMICOLON)) {
+      nextToken();
+    }
+
+    ExpressionStatement(current, expression)
+  }
+
+  private def parseExpression(precedence: Int) = 
+    prefixParseFns.get(curToken.ttype) match {
+      case Some(prefix) => prefix()
+      case None => null
+    }
+
+  private def parseIntegerLiteral(): IntegerLiteral = 
+    try {
+      val value = curToken.literal.toLong
+      IntegerLiteral(curToken, value)
+    } catch {
+      case e: java.lang.NumberFormatException => {
+        val msg = e.getMessage
+        errors_ = errors_ :+ msg
+        null
+      }
+    }
 
   private def curTokenIs(t: token.TokenType) = curToken.ttype == t
   private def peekTokenIs(t: token.TokenType) = peekToken.ttype == t

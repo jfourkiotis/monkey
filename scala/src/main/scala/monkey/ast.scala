@@ -60,8 +60,13 @@ case class ReturnStatement(token: Token, value: Expression) extends Statement {
   }
 }
 // x + 10;
-case class ExpressionStatement(token: Token, value: Expression) extends Statement {
+case class ExpressionStatement(token: Token, expression: Expression) extends Statement {
   override def tokenLiteral = token.literal
-  override lazy val toString = if (value != null) value.toString else ""
+  override lazy val toString = if (expression != null) expression.toString else ""
+}
+
+case class IntegerLiteral(token: Token, value: Long) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = value.toString
 }
 
