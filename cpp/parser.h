@@ -7,6 +7,7 @@
 #include <functional>
 #include <unordered_map>
 #include <sstream>
+#include <cstdint>
 
 #include "token.h"
 #include "lexer.h"
@@ -143,7 +144,7 @@ private:
 
     std::unique_ptr<ast::Expression> parseIntegerLiteral() {
         std::istringstream stream{curToken_.literal};
-        long value{0};
+        int64_t value{0};
         stream >> value;
 
         if (!stream) {

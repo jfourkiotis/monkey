@@ -132,16 +132,16 @@ private:
 
 class IntegerLiteral : public Expression {
 public:
-    IntegerLiteral(token::Token token, long value) : token_(token), value_(value) {}
+    IntegerLiteral(token::Token token, int64_t value) : token_(token), value_(value) {}
 
     std::string TokenLiteral() const override { return token_.literal; }
 
     std::string ToString() const override { return token_.literal; }
 
-    long Value() const { return value_; }
+    int64_t Value() const { return value_; }
 private:
     token::Token token_;
-    long value_;
+    int64_t value_;
 };//~ IntegerLiteral
 
 }//~ ast
