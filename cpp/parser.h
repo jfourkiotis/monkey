@@ -34,11 +34,17 @@ public:
         using std::make_unique;
         using namespace token;
 
-        registerPrefix(IDENT, [this]{ 
+        registerPrefix(IDENT, [this] { 
             return make_unique<ast::Identifier>(curToken_, curToken_.literal); 
         });
-        registerPrefix(INT, [this]{
+        registerPrefix(INT, [this] {
             return parseIntegerLiteral();
+        });
+        registerPrefix(BANG, [this] {
+            return parsePrefixExpression();
+        });
+        registerPrefix(MINUS, [this] {
+            return parsePrefixExpression();
         });
     
     }
@@ -63,6 +69,11 @@ public:
     using ErrorList = std::vector<std::string>;
     ErrorList Errors() const { return errors_; }
 private:
+
+    void noPrefixParseError(token::TokenType t) {
+        std::string msg = "no prefix parse function for " + t + " found";
+        errors_.push_back(msg);
+    }
 
     void peekError(token::TokenType t) {
         auto msg = "expected next token to be " + t + ". got " + peekToken_.type + " instead";
@@ -135,6 +146,7 @@ private:
     std::unique_ptr<ast::Expression> parseExpression(int precedence) {
         auto prefix = prefixParseFns_[curToken_.type];
         if (!prefix) {
+            noPrefixParseError(curToken_.type);
             return nullptr;
         }
 
@@ -153,6 +165,17 @@ private:
             return nullptr;
         }
         return std::make_unique<ast::IntegerLiteral>(curToken_, value);
+    }
+
+    std::unique_ptr<ast::Expression> parsePrefixExpression() {
+        auto token = curToken_;
+        auto op = curToken_.literal;
+
+        nextToken(); // consume ! or -
+
+        auto right = parseExpression(PREFIX);
+
+        return std::make_unique<ast::PrefixExpression>(token, op, std::move(right));
     }
 
     bool curTokenIs(token::TokenType type) const {

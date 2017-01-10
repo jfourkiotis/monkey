@@ -144,6 +144,33 @@ private:
     int64_t value_;
 };//~ IntegerLiteral
 
+class PrefixExpression : public Expression {
+public:
+    PrefixExpression(token::Token tok, const std::string& op, std::unique_ptr<Expression> right)
+        : token_(tok), op_(op), right_(std::move(right)) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override { 
+        std::string buf;
+
+        buf.append(1, '(');
+        buf.append(op_);
+        buf.append(right_->ToString());
+        buf.append(1, ')');
+
+        return buf;
+    }
+
+    std::string Operator() const { return op_; }
+
+    const Expression* Right() const { return right_.get(); }
+private:
+    token::Token token_;
+    std::string op_;
+    std::unique_ptr<Expression> right_;
+};//~ PrefixExpression
+
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED
 

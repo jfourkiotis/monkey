@@ -131,9 +131,9 @@ TEST_CASE("lexer", "[lexer]") {
 void checkParserErrors(const Parser &p) {
     auto errors = p.Errors();
     if (!errors.empty()) {
-        INFO("the parser had " << errors.size() << " errors")
+        WARN("the parser had " << errors.size() << " errors");
         for(const auto& msg : errors) {
-            INFO("parser error: " << msg);
+            WARN("parser error: " << msg);
         }
         REQUIRE(errors.empty());
     }
@@ -245,6 +245,13 @@ TEST_CASE("IdentifierExpression", "[Parsing]") {
     REQUIRE(id->TokenLiteral() == "foobar");
 }
 
+static void testIntegerLiteral(const ast::Expression *expression, int64_t value) {
+    auto literal = dynamic_cast<const ast::IntegerLiteral *>(expression);
+    REQUIRE(literal);
+    REQUIRE(literal->Value() == value);
+    REQUIRE(literal->TokenLiteral() == std::to_string(value));
+}
+
 TEST_CASE("IntegerLiteralExpression", "[Parsing]") {
     using std::string;
 
@@ -265,5 +272,33 @@ TEST_CASE("IntegerLiteralExpression", "[Parsing]") {
     REQUIRE(integer->Value() == 5);
     REQUIRE(integer->TokenLiteral() == "5");
 }
-    
+
+
+TEST_CASE("PrefixExpression", "[Parsing]") {
+    using std::string;
+
+    struct {
+        string input;
+        string op;
+        int64_t integer_value;
+    } prefixTests[] = {
+        {"!5;", "!", 5},
+        {"-15;", "-", 15},
+    };
+
+    for (const auto& test : prefixTests) {
+        lexer::Lexer l{test.input};
+        Parser p{l};
+        auto program = p.ParseProgram();
+        checkParserErrors(p);
+
+        REQUIRE(program->size() == 1);
+        auto expressionStmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+        REQUIRE(expressionStmt);
+        auto prefixExpression = dynamic_cast<const ast::PrefixExpression *>((expressionStmt->BorrowedExpression()));
+        REQUIRE(prefixExpression);
+        REQUIRE(prefixExpression->Operator() == test.op);
+        testIntegerLiteral(prefixExpression->Right(), test.integer_value);
+    }
+}
 
