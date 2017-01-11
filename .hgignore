@@ -12,3 +12,4 @@ __dummy.html
 *.obj
 __test__*__
 .gitignore
+.idea

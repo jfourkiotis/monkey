@@ -189,6 +189,41 @@ public:
     long value() const @property { return value_; }
 }
 
+class PrefixExpression : Expression {
+private:
+    Token token_;
+    string operator_;
+    Expression right_;
+
+public:
+    @disable this();
+
+    this(Token token, string operator, Expression right) {
+        token_ = token;
+        operator_ = operator;
+        right_ = right;
+    }
+
+    override string tokenLiteral() const {
+        return token_.literal;
+    }
+
+    override string toString() const {
+        char[] buf;
+
+        buf ~= '(';
+        buf ~= operator_;
+        buf ~= right_.toString;
+        buf ~= ')';
+
+        return buf.idup;
+    }
+
+    string operator() const @property { return operator_; }
+
+    const(Expression) right() const @property { return right_; }
+}
+
 unittest {
     auto program = new Program([
             new LetStatement(

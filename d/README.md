@@ -6,4 +6,5 @@
 * v0.2.5 Parse RETURN statements (ignores the expression part) + toString methods
 * v0.2.6a Parse Identifiers
 * v0.2.6b Parse Integer literals
+* v0.2.6c Parse ! & - prefix operators
 

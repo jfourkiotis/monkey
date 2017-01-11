@@ -100,9 +100,25 @@ private:
         return new ExpressionStatement(exprToken, expression);
     }
 
+    void noPrefixParseFnError(TokenType type) {
+        import std.string : format;
+        string msg = format("no prefix parse function for '%s' found", type);
+        errors_ ~= msg;
+    }
+
+    Expression parsePrefixExpression() {
+        auto current = curToken_;
+        auto operator = curToken_.literal;
+
+        nextToken(); // consume operator
+        auto right = parseExpression(Precedence.PREFIX);
+        return new PrefixExpression(current, operator, right);
+    }
+
     Expression parseExpression(int precedence) {
         auto prefix = (curToken_.type in prefixParseFns_);
         if (prefix is null) {
+            noPrefixParseFnError(curToken_.type);
             return null;
         }
 
@@ -153,6 +169,8 @@ public:
 
         registerPrefix(IDENT, delegate() { return new Identifier(curToken_, curToken_.literal); });
         registerPrefix(INT, delegate() { return parseIntegerLiteral(); });
+        registerPrefix(BANG, delegate() { return parsePrefixExpression(); });
+        registerPrefix(MINUS, delegate() { return parsePrefixExpression(); });
     }
 
     string[] errors() { return errors_.dup; }
@@ -283,6 +301,40 @@ unittest {
         assert(literal !is null, format("exp not IntegerLiteral. got '%s'", literal));
         assert(literal.value == 5);
         assert(literal.tokenLiteral == "5");
+    }
+
+    void testIntegerLiteral(const(Expression) expression, long value) {
+        import std.conv;
+        auto integer = cast(IntegerLiteral) expression;
+        assert(integer, format("expected IntegerLiteral, got '%s'", integer));
+        assert(integer.value == value);
+        assert(integer.tokenLiteral == to!string(value));
+    }
+
+    {// PREFIX EXPRESSIONS
+        struct PrefixTest { string input; string operator; long integerValue; }
+        PrefixTest[] prefixTests = [
+            { input: "!5;" , operator: "!", integerValue: 5 },
+            { input: "-15;", operator: "-", integerValue: 15},
+        ];
+
+        foreach(tt; prefixTests) {
+            auto l = Lexer(tt.input);
+            auto p = Parser(l);
+            auto program = p.parseProgram();
+            checkParserErrors(p);
+
+            assert(program !is null, "parseProgram() returned null");
+            assert(program.length == 1, "program.statements does not contain 1 statements");
+
+            auto expressionStmt = cast(ExpressionStatement) program[0];
+            assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement. got '%s'", expressionStmt));
+
+            auto prefixExpression = cast(PrefixExpression) expressionStmt.expression;
+            assert(prefixExpression !is null, format("expected PrefixExpression, got '%s'", prefixExpression));
+            assert(prefixExpression.operator == tt.operator);
+            testIntegerLiteral(prefixExpression.right, tt.integerValue);
+        }
     }
 }
 
