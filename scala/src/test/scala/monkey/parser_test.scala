@@ -93,6 +93,29 @@ class ParserSpec extends FlatSpec with Matchers {
     }
   }
 
+  "A Parser" should "parse prefix operators" in {
+    val prefixTests = List(("!5;", "!", 5), ("-15;", "-", 15))
+
+    prefixTests.foreach( tt => {
+      val lexer = new Lexer(tt._1)
+      val parser = new Parser(lexer)
+      val program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      program should not be (null)
+      program.statements.size should be (1)
+
+      program.statements.foreach { stmt =>
+        stmt shouldBe a [ExpressionStatement]
+        val expressionStmt = stmt.asInstanceOf[ExpressionStatement]
+        expressionStmt.expression shouldBe a [PrefixExpression]
+        val prefixExpression = expressionStmt.expression.asInstanceOf[PrefixExpression]
+        prefixExpression.operator should be (tt._2)
+        testIntegerLiteral(prefixExpression.right, tt._3)
+      }
+    })
+  }
+
   def testLetStatement(stmt: Statement, name: String): Boolean = {
 
     stmt.tokenLiteral should be ("let")
@@ -102,6 +125,17 @@ class ParserSpec extends FlatSpec with Matchers {
     letStmt.name.value should be (name)
     letStmt.name.tokenLiteral should be (name)
 
+    true
+  }
+
+  def testIntegerLiteral(stmt: Expression, value: Long): Boolean = {
+    
+    stmt shouldBe a [IntegerLiteral]
+    val integer = stmt.asInstanceOf[IntegerLiteral]
+    integer.value should be (value)
+
+    val str = value.toString
+    integer.tokenLiteral should be (str)
     true
   }
 

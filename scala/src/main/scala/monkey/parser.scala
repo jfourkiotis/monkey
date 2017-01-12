@@ -31,6 +31,8 @@ class Parser(l: Lexer) {
 
   registerPrefix(token.IDENT, () => Identifier(curToken, curToken.literal))
   registerPrefix(token.INT, parseIntegerLiteral)
+  registerPrefix(token.BANG, parsePrefixExpression)
+  registerPrefix(token.MINUS, parsePrefixExpression)
 
   private def nextToken() {
     curToken = peekToken
@@ -100,7 +102,7 @@ class Parser(l: Lexer) {
   }
 
   private def parseExpressionStatement(): ExpressionStatement = {
-    val current = curToken;
+    val current = curToken
     val expression = parseExpression(Precedence.LOWEST)
     
     if (peekTokenIs(token.SEMICOLON)) {
@@ -110,11 +112,27 @@ class Parser(l: Lexer) {
     ExpressionStatement(current, expression)
   }
 
+  private def noPrefixParseFnError(ttype: token.TokenType) {
+    val msg = s"no prefix parse function for $ttype found"
+    errors_ = errors_ :+ msg
+  }
+
   private def parseExpression(precedence: Int) = 
     prefixParseFns.get(curToken.ttype) match {
       case Some(prefix) => prefix()
-      case None => null
+      case None => {
+        noPrefixParseFnError(curToken.ttype)
+        null
+      }
     }
+
+  private def parsePrefixExpression() = {
+    val current = curToken
+    val operator = curToken.literal
+    nextToken() // consume operator
+    val right = parseExpression(Precedence.PREFIX)
+    PrefixExpression(current, operator, right)
+  }
 
   private def parseIntegerLiteral(): IntegerLiteral = 
     try {
