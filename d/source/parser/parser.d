@@ -5,7 +5,7 @@ import lexer;
 import ast;
 
 alias PrefixParseFn = Expression delegate();
-alias InfixParseFn = Expression function(Expression);
+alias InfixParseFn = Expression delegate(Expression);
 
 enum Precedence {
     LOWEST,
@@ -19,6 +19,19 @@ enum Precedence {
 
 struct Parser {
 private:
+    static immutable(int[TokenType]) precedences;
+
+    static this() {
+        precedences[EQ] = Precedence.EQUALS;    
+        precedences[NOT_EQ] = Precedence.EQUALS;    
+        precedences[LT] = Precedence.LESSGREATER;    
+        precedences[GT] = Precedence.LESSGREATER;    
+        precedences[PLUS] = Precedence.SUM;    
+        precedences[MINUS] = Precedence.SUM;    
+        precedences[SLASH] = Precedence.PRODUCT;    
+        precedences[ASTERISK] = Precedence.PRODUCT;    
+    }
+
     Lexer lexer_;
     Token curToken_;
     Token peekToken_;
@@ -32,6 +45,23 @@ private:
 
     void registerInfix(TokenType type, InfixParseFn fn) { 
         infixParseFns_[type] = fn;
+    }
+
+    int curPrecedence() const {
+        auto prec = (curToken_.type in precedences);
+        if (prec !is null) {
+            return *prec;
+        }
+        return Precedence.LOWEST;
+    }
+
+
+    int peekPrecedence() const {
+        auto prec = (peekToken_.type in precedences);
+        if (prec !is null) {
+            return *prec;
+        }
+        return Precedence.LOWEST;
     }
 
     void peekError(TokenType t) {
@@ -122,7 +152,28 @@ private:
             return null;
         }
 
-        return (*prefix)();
+        auto left = (*prefix)();
+        while (!peekTokenIs(SEMICOLON) && precedence < peekPrecedence()) {
+            auto infix = (peekToken_.type in infixParseFns_);
+            if (infix is null) {
+                return left;
+            }
+
+            nextToken();
+            left = (*infix)(left);
+        }
+
+        return left;
+    }
+
+    Expression parseInfixExpression(Expression left) {
+        auto current = curToken_;
+        auto operator = curToken_.literal;
+        auto precedence = curPrecedence();
+
+        nextToken();
+        auto right = parseExpression(precedence);
+        return new InfixExpression(current, left, operator, right);
     }
 
     bool curTokenIs(TokenType t) const {
@@ -171,6 +222,15 @@ public:
         registerPrefix(INT, delegate() { return parseIntegerLiteral(); });
         registerPrefix(BANG, delegate() { return parsePrefixExpression(); });
         registerPrefix(MINUS, delegate() { return parsePrefixExpression(); });
+        //
+        registerInfix(PLUS, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(MINUS, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(SLASH, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(ASTERISK, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(EQ, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(NOT_EQ, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(LT, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(GT, delegate(Expression left) { return parseInfixExpression(left); });
     }
 
     string[] errors() { return errors_.dup; }
@@ -334,6 +394,68 @@ unittest {
             assert(prefixExpression !is null, format("expected PrefixExpression, got '%s'", prefixExpression));
             assert(prefixExpression.operator == tt.operator);
             testIntegerLiteral(prefixExpression.right, tt.integerValue);
+        }
+    }
+
+    {// INFIX EXPRESSIONS
+        struct InfixTest { string input; long leftValue; string operator; long rightValue; }
+        InfixTest[] infixTests = [
+            { input: "5 + 5;", leftValue: 5, operator: "+" , rightValue: 5 },
+            { input: "5 - 5;", leftValue: 5, operator: "-" , rightValue: 5 },
+            { input: "5 * 5;", leftValue: 5, operator: "*" , rightValue: 5 },
+            { input: "5 / 5;", leftValue: 5, operator: "/" , rightValue: 5 },
+            { input: "5 > 5;", leftValue: 5, operator: ">" , rightValue: 5 },
+            { input: "5 < 5;", leftValue: 5, operator: "<" , rightValue: 5 },
+            { input: "5 == 5;", leftValue: 5, operator: "==", rightValue: 5},
+            { input: "5 != 5;", leftValue: 5, operator: "!=", rightValue: 5},
+        ];
+
+        foreach(tt; infixTests) {
+            auto l = Lexer(tt.input);
+            auto p = Parser(l);
+            auto program = p.parseProgram();
+            checkParserErrors(p);
+
+            assert(program !is null, "parseProgram() returned null");
+            assert(program.length == 1, "program.statements does not contain 1 statements");
+
+            auto expressionStmt = cast(ExpressionStatement) program[0];
+            assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement. got '%s'", expressionStmt));
+
+            auto infixExpression = cast(InfixExpression) expressionStmt.expression;
+            assert(infixExpression !is null, format("expected InfixExpression, got '%s'", infixExpression));
+            testIntegerLiteral(infixExpression.left, tt.leftValue);
+            assert(infixExpression.operator == tt.operator);
+            testIntegerLiteral(infixExpression.right, tt.rightValue);
+        }
+    }
+
+    { // OPERATOR PRECEDENCE
+        struct OperatorPrecedenceTest { string input; string expected; }
+        OperatorPrecedenceTest[] tests = [
+            { input: "-a * b", expected: "((-a) * b)" },
+            { input: "!-a", expected: "(!(-a))" },
+            { input: "a + b + c", expected: "((a + b) + c)" },
+            { input: "a + b - c", expected: "((a + b) - c)" },
+            { input: "a * b * c", expected: "((a * b) * c)" },
+            { input: "a * b / c", expected: "((a * b) / c)" },
+            { input: "a + b / c", expected: "(a + (b / c))" },
+            { input: "a + b * c + d / e - f", expected: "(((a + (b * c)) + (d / e)) - f)" },
+            { input: "3 + 4; -5 * 5", expected: "(3 + 4)((-5) * 5)" },
+            { input: "5 > 4 == 3 < 4", expected: "((5 > 4) == (3 < 4))" },
+            { input: "5 < 4 != 3 > 4", expected: "((5 < 4) != (3 > 4))" },
+            { input: "3 + 4 * 5 == 3 * 1 + 4 * 5", expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))" },
+            { input: "3 + 4 * 5 == 3 * 1 + 4 * 5", expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))" },
+        ];
+        
+        foreach(tt; tests) {
+            import std.string : format;
+            auto l = Lexer(tt.input);
+            auto p = Parser(l);
+            auto program = p.parseProgram();
+            checkParserErrors(p);
+
+            assert(program.toString == tt.expected, format("Got '%s', Expected '%s'", program.toString, tt.expected));
         }
     }
 }

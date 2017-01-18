@@ -224,6 +224,45 @@ public:
     const(Expression) right() const @property { return right_; }
 }
 
+class InfixExpression : Expression {
+private:
+    Token token_;
+    Expression left_;
+    string operator_;
+    Expression right_;
+public:
+    @disable this();
+
+    this(Token token, Expression left, string operator, Expression right) {
+        token_ = token;
+        left_ = left;
+        operator_ = operator;
+        right_ = right;
+    }
+
+    override string tokenLiteral() const {
+        return token_.literal;
+    }
+
+    override string toString() const {
+        char[] buf;
+
+        buf ~= '(';
+        buf ~= left_.toString;
+        buf ~= ' ';
+        buf ~= operator_;
+        buf ~= ' ';
+        buf ~= right_.toString;
+        buf ~= ')';
+
+        return buf.idup;
+    }
+
+    const(Expression) left() const @property { return left_; }
+    string operator() const @property { return operator_; }
+    const(Expression) right() const @property { return right_; }
+}
+
 unittest {
     auto program = new Program([
             new LetStatement(

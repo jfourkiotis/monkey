@@ -15,9 +15,9 @@ struct Lexer {
             ch = 0;
         } else {
             ch = input[readPosition];
-            position = readPosition;
-            ++readPosition;
         }
+        position = readPosition;
+        ++readPosition;
     }
 
     char peekChar() {
