@@ -10,7 +10,19 @@ class Parser(l: Lexer) {
     val PRODUCT = 4 // *
     val PREFIX  = 5 // -X or !X
     val CALL    = 6 // myFunction(X)
+
   }
+
+  val precedences = Map(
+    token.EQ -> Precedence.EQUALS,
+    token.NOT_EQ -> Precedence.EQUALS,
+    token.LT -> Precedence.LESSGREATER,
+    token.GT -> Precedence.LESSGREATER,
+    token.PLUS -> Precedence.SUM,
+    token.MINUS -> Precedence.SUM,
+    token.SLASH -> Precedence.PRODUCT,
+    token.ASTERISK -> Precedence.PRODUCT
+  )
 
   type PrefixParseFn = () => Expression
   type InfixParseFn = Expression => Expression
@@ -33,6 +45,16 @@ class Parser(l: Lexer) {
   registerPrefix(token.INT, parseIntegerLiteral)
   registerPrefix(token.BANG, parsePrefixExpression)
   registerPrefix(token.MINUS, parsePrefixExpression)
+  //
+  registerInfix(token.PLUS, parseInfixExpression)
+  registerInfix(token.MINUS, parseInfixExpression)
+  registerInfix(token.ASTERISK, parseInfixExpression)
+  registerInfix(token.SLASH, parseInfixExpression)
+  registerInfix(token.EQ, parseInfixExpression)
+  registerInfix(token.NOT_EQ, parseInfixExpression)
+  registerInfix(token.LT, parseInfixExpression)
+  registerInfix(token.GT, parseInfixExpression)
+  
 
   private def nextToken() {
     curToken = peekToken
@@ -117,9 +139,22 @@ class Parser(l: Lexer) {
     errors_ = errors_ :+ msg
   }
 
-  private def parseExpression(precedence: Int) = 
+  private def parseExpression(precedence: Int): Expression = 
     prefixParseFns.get(curToken.ttype) match {
-      case Some(prefix) => prefix()
+      case Some(prefix) => {
+        var left = prefix()
+
+        while (!peekTokenIs(token.SEMICOLON) && precedence < peekPrecedence) {
+          infixParseFns.get(peekToken.ttype) match {
+            case Some(infix) => {
+              nextToken()
+              left = infix(left)
+            }
+            case None => return left
+          }
+        }
+        left
+      }
       case None => {
         noPrefixParseFnError(curToken.ttype)
         null
@@ -132,6 +167,16 @@ class Parser(l: Lexer) {
     nextToken() // consume operator
     val right = parseExpression(Precedence.PREFIX)
     PrefixExpression(current, operator, right)
+  }
+
+  private def parseInfixExpression(left: Expression) = {
+    val current = curToken
+    val operator = curToken.literal
+
+    val precedence = curPrecedence // of operator
+    nextToken()
+    val right = parseExpression(precedence)
+    InfixExpression(curToken, left, operator, right)
   }
 
   private def parseIntegerLiteral(): IntegerLiteral = 
@@ -156,4 +201,8 @@ class Parser(l: Lexer) {
       peekError(t)
       false
     }
+
+
+  private def curPrecedence = precedences.getOrElse(curToken.ttype, Precedence.LOWEST)
+  private def peekPrecedence = precedences.getOrElse(peekToken.ttype, Precedence.LOWEST)
 }

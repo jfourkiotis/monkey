@@ -116,6 +116,67 @@ class ParserSpec extends FlatSpec with Matchers {
     })
   }
 
+  "A Parser" should "parse infix expressions" in {
+    val infixTests = List(
+      ("5 + 5;", 5, "+", 5),
+      ("5 - 5;", 5, "-", 5),
+      ("5 * 5;", 5, "*", 5),
+      ("5 / 5;", 5, "/", 5),
+      ("5 > 5;", 5, ">", 5),
+      ("5 < 5;", 5, "<", 5),
+      ("5 == 5;", 5, "==", 5),
+      ("5 != 5;", 5, "!=", 5)
+      )
+
+    infixTests.foreach( tt => {
+      val lexer = new Lexer(tt._1)
+      val parser = new Parser(lexer)
+      val program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      program should not be (null)
+      program.statements.size should be (1)
+
+      program.statements.foreach { stmt =>
+        stmt shouldBe a [ExpressionStatement]
+        val expressionStmt = stmt.asInstanceOf[ExpressionStatement]
+        expressionStmt.expression shouldBe a [InfixExpression]
+        val infixExpression = expressionStmt.expression.asInstanceOf[InfixExpression]
+        testIntegerLiteral(infixExpression.left, tt._2)
+        infixExpression.operator should be (tt._3)
+        testIntegerLiteral(infixExpression.right, tt._4)
+      }
+    })
+  }
+
+  "A Parser" should "respect operator precedence" in {
+    val tests = List(
+      ("-a * b", "((-a) * b)"),
+      ("!-a", "(!(-a))"),
+      ("a + b + c", "((a + b) + c)"),
+      ("a + b - c", "((a + b) - c)"),
+      ("a * b * c", "((a * b) * c)"),
+      ("a * b / c", "((a * b) / c)"),
+      ("a + b / c", "(a + (b / c))"),
+      ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+      ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+      ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+      ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+      ("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+      ("3 + 4 * 5 != 3 * 1 + 4 * 5", "((3 + (4 * 5)) != ((3 * 1) + (4 * 5)))")
+    )
+   tests.foreach( tt => {
+    val lexer = new Lexer(tt._1)
+    val parser = new Parser(lexer)
+    val program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    val actual = program.toString
+    info(actual)
+    actual should be (tt._2)
+   })
+  }
+
   def testLetStatement(stmt: Statement, name: String): Boolean = {
 
     stmt.tokenLiteral should be ("let")

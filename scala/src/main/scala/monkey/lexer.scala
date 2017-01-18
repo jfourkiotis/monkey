@@ -14,9 +14,9 @@ class Lexer(val input: String) {
       ch = 0.toChar
     } else {
       ch = input(readPosition)
-      position = readPosition
-      readPosition += 1
     }
+    position = readPosition
+    readPosition += 1
   }
 
   private def peekChar() = 

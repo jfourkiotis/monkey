@@ -84,3 +84,20 @@ case class PrefixExpression(token: Token, operator: String, right: Expression) e
   }
 }
 
+case class InfixExpression(token: Token, left: Expression, operator: String, right: Expression) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = {
+    val buf = new StringBuilder
+
+    buf += '('
+    buf ++= left.toString
+    buf += ' '
+    buf ++= operator
+    buf += ' '
+    buf ++= right.toString
+    buf += ')'
+
+    buf.toString
+  }
+}
+
