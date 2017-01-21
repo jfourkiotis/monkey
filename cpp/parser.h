@@ -23,6 +23,16 @@ enum Precedence {
     CALL,           // myFunction(X)
 };
 
+const std::unordered_map<token::TokenType, int> precedences = {
+    { token::EQ, EQUALS },
+    { token::NOT_EQ, EQUALS },
+    { token::LT, LESSGREATER },
+    { token::GT, LESSGREATER },
+    { token::PLUS, SUM },
+    { token::MINUS, SUM },
+    { token::SLASH, PRODUCT },
+    { token::ASTERISK, PRODUCT },
+};
 
 using PrefixParseFn = std::function<std::unique_ptr<ast::Expression>()>;
 using InfixParseFn = std::function<std::unique_ptr<ast::Expression>(std::unique_ptr<ast::Expression>)>;
@@ -46,7 +56,31 @@ public:
         registerPrefix(MINUS, [this] {
             return parsePrefixExpression();
         });
-    
+        registerInfix(PLUS, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+        registerInfix(MINUS, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+        registerInfix(SLASH, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+        registerInfix(ASTERISK, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+        registerInfix(EQ, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+        registerInfix(NOT_EQ, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+        registerInfix(LT, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+        registerInfix(GT, [this] (auto left) {
+            return parseInfixExpression(std::move(left));
+        });
+
     }
 
     std::unique_ptr<ast::Program> ParseProgram() {
@@ -73,6 +107,16 @@ private:
     void noPrefixParseError(token::TokenType t) {
         std::string msg = "no prefix parse function for " + t + " found";
         errors_.push_back(msg);
+    }
+
+    int peekPrecedence() const {
+        auto p = precedences.find(peekToken_.type);
+        return p == precedences.end() ? LOWEST : p->second;
+    }
+
+    int curPrecedence() const {
+        auto p = precedences.find(curToken_.type);
+        return p == precedences.end() ? LOWEST : p->second;
     }
 
     void peekError(token::TokenType t) {
@@ -151,6 +195,17 @@ private:
         }
 
         auto left = prefix();
+
+        while (!peekTokenIs(token::SEMICOLON) && precedence < peekPrecedence()) {
+            auto infix = infixParseFns_.find(peekToken_.type);
+            if (infix == infixParseFns_.end()) {
+                return left;
+            }
+
+            nextToken();
+
+            left = (infix->second)(std::move(left));
+        }
         return left;
     }
 
@@ -176,6 +231,17 @@ private:
         auto right = parseExpression(PREFIX);
 
         return std::make_unique<ast::PrefixExpression>(token, op, std::move(right));
+    }
+
+    std::unique_ptr<ast::Expression> parseInfixExpression(std::unique_ptr<ast::Expression> left) {
+        auto token = curToken_;
+        auto op = curToken_.literal;
+
+        auto precedence = curPrecedence();
+        nextToken();
+        auto right = parseExpression(precedence);
+
+        return std::make_unique<ast::InfixExpression>(token, std::move(left), op, std::move(right));
     }
 
     bool curTokenIs(token::TokenType type) const {

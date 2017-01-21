@@ -171,6 +171,37 @@ private:
     std::unique_ptr<Expression> right_;
 };//~ PrefixExpression
 
+class InfixExpression : public Expression {
+public:
+    InfixExpression(token::Token tok, std::unique_ptr<Expression> left, const std::string& op, std::unique_ptr<Expression> right)
+        : token_(tok), left_(std::move(left)), op_(op), right_(std::move(right)) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override {
+        std::string buf;
+
+        buf.append(1, '(');
+        buf.append(left_->ToString());
+        buf.append(1, ' ');
+        buf.append(op_);
+        buf.append(1, ' ');
+        buf.append(right_->ToString());
+        buf.append(1, ')');
+
+        return buf;
+    }
+
+    std::string Operator() const { return op_; }
+
+    const Expression* Left() const { return left_.get(); }
+    const Expression* Right() const { return right_.get(); }
+private:
+    token::Token token_;
+    std::unique_ptr<Expression> left_;
+    std::string op_;
+    std::unique_ptr<Expression> right_;
+};//~ InfixExpression
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED
 

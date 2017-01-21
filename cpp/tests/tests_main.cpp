@@ -302,3 +302,40 @@ TEST_CASE("PrefixExpression", "[Parsing]") {
     }
 }
 
+TEST_CASE("InfixExpression", "[Parsing]") {
+    using std::string;
+
+    struct {
+        string input;
+        int64_t left_value;
+        string op;
+        int64_t right_value;
+    } infixTests[] = {
+        { "5 + 5;", 5, "+", 5 },
+        { "5 - 5;", 5, "-", 5 },
+        { "5 * 5;", 5, "*", 5 },
+        { "5 / 5;", 5, "/", 5 },
+        { "5 > 5;", 5, ">", 5 },
+        { "5 < 5;", 5, "<", 5 },
+        { "5 == 5;", 5, "==", 5 },
+        { "5 != 5;", 5, "!=", 5 },
+    };
+
+    for (const auto& test : infixTests) {
+        lexer::Lexer l{test.input};
+        Parser p{l};
+        auto program = p.ParseProgram();
+        checkParserErrors(p);
+
+        REQUIRE(program->size() == 1);
+        auto expressionStmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+        REQUIRE(expressionStmt);
+        auto infixExpression = 
+            dynamic_cast<const ast::InfixExpression *>((expressionStmt->BorrowedExpression()));
+        REQUIRE(infixExpression);
+        testIntegerLiteral(infixExpression->Left(), test.left_value);
+        REQUIRE(infixExpression->Operator() == test.op);
+        testIntegerLiteral(infixExpression->Right(), test.right_value);
+    }
+}
+
