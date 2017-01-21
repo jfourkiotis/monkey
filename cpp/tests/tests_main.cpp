@@ -339,3 +339,33 @@ TEST_CASE("InfixExpression", "[Parsing]") {
     }
 }
 
+TEST_CASE("OperatorPrecedence", "[Parsing]") {
+    using std::string;
+
+    struct {
+        std::string input;
+        std::string expected;
+    } tests[] = {
+        { "-a * b", "((-a) * b)" },
+        { "a + b + c", "((a + b) + c)" },
+        { "a + b - c", "((a + b) - c)" },
+        { "a * b * c", "((a * b) * c)" },
+        { "a * b / c", "((a * b) / c)" },
+        { "a + b / c", "(a + (b / c))" },
+        { "a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)" },
+        { "3 + 4; -5 * 5", "(3 + 4)((-5) * 5)" },
+        { "5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))" },
+        { "3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))" },
+        { "3 + 4 * 5 != 3 * 1 + 4 * 5", "((3 + (4 * 5)) != ((3 * 1) + (4 * 5)))" },
+    };
+
+    for(const auto& test : tests) {
+        lexer::Lexer l{test.input};
+        Parser p{l};
+        auto program = p.ParseProgram();
+        checkParserErrors(p);
+
+        auto actual = program->ToString();
+        REQUIRE(actual == test.expected);
+    }
+}

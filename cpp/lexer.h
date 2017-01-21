@@ -100,9 +100,9 @@ private:
             ch = 0; // we haven't read anything OR we are at end of file
         } else {
             ch = input[read_position];
-            position = read_position;
-            ++read_position;
         }
+        position = read_position;
+        ++read_position;
     }
 
     char peekChar() const {
