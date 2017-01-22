@@ -252,6 +252,37 @@ static void testIntegerLiteral(const ast::Expression *expression, int64_t value)
     REQUIRE(literal->TokenLiteral() == std::to_string(value));
 }
 
+static void testIdentifier(const ast::Expression *expression, const std::string& str) {
+    auto ident = dynamic_cast<const ast::Identifier *>(expression);
+    REQUIRE(ident);
+    REQUIRE(ident->Value() == str);
+    REQUIRE(ident->TokenLiteral() == str);
+}
+
+static void testLiteralExpression(const ast::Expression *expression, int64_t v) {
+    testIntegerLiteral(expression, v);
+}
+
+static void testLiteralExpression(const ast::Expression *expression, const std::string& s) {
+    testIdentifier(expression, s);
+}
+
+static void testInfixExpression(const ast::Expression *expression, int64_t l, const std::string& op, int64_t r) {
+    auto infix = dynamic_cast<const ast::InfixExpression *>(expression);
+    REQUIRE(infix);
+    testLiteralExpression(infix->Left(), l);
+    REQUIRE(infix->Operator() == op);
+    testLiteralExpression(infix->Right(), r);
+}
+
+static void testInfixExpression(const ast::Expression *expression, const std::string& l, const std::string& op, const std::string& r) {
+    auto infix = dynamic_cast<const ast::InfixExpression *>(expression);
+    REQUIRE(infix);
+    testLiteralExpression(infix->Left(), l);
+    REQUIRE(infix->Operator() == op);
+    testLiteralExpression(infix->Right(), r);
+}
+
 TEST_CASE("IntegerLiteralExpression", "[Parsing]") {
     using std::string;
 
@@ -357,6 +388,10 @@ TEST_CASE("OperatorPrecedence", "[Parsing]") {
         { "5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))" },
         { "3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))" },
         { "3 + 4 * 5 != 3 * 1 + 4 * 5", "((3 + (4 * 5)) != ((3 * 1) + (4 * 5)))" },
+        { "true", "true" },
+        { "false", "false" },
+        { "3 > 5 == false", "((3 > 5) == false)" },
+        { "3 < 5 == true" , "((3 < 5) == true)"  },
     };
 
     for(const auto& test : tests) {

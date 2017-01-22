@@ -56,6 +56,12 @@ public:
         registerPrefix(MINUS, [this] {
             return parsePrefixExpression();
         });
+        registerPrefix(TRUE_, [this] {
+            return parseBoolean();
+        });
+        registerPrefix(FALSE_, [this] {
+            return parseBoolean();
+        });
         registerInfix(PLUS, [this] (auto left) {
             return parseInfixExpression(std::move(left));
         });
@@ -207,6 +213,10 @@ private:
             left = (infix->second)(std::move(left));
         }
         return left;
+    }
+
+    std::unique_ptr<ast::Expression> parseBoolean() {
+        return std::make_unique<ast::Boolean>(curToken_, curTokenIs(token::TRUE_));
     }
 
     std::unique_ptr<ast::Expression> parseIntegerLiteral() {

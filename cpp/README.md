@@ -8,3 +8,4 @@
 * v0.2.6b The parser can handle integer literals
 * v0.2.6c The parser can handle prefix operators (!, -)
 * v0.2.6d The parser can handle infix operators
+* v0.2.8a The parser can handle boolean literals

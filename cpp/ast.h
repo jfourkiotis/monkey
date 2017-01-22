@@ -202,6 +202,21 @@ private:
     std::string op_;
     std::unique_ptr<Expression> right_;
 };//~ InfixExpression
+
+class Boolean : public Expression {
+public:
+    Boolean(token::Token tok, bool val) : token_(tok), value_(val) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override { return token_.literal; }
+
+    bool Value() const { return value_; }
+private:
+    token::Token token_;
+    bool value_;
+};//~ Boolean
+
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED
 
