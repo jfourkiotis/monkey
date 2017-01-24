@@ -216,7 +216,7 @@ private:
     }
 
     std::unique_ptr<ast::Expression> parseBoolean() {
-        return std::make_unique<ast::Boolean>(curToken_, curTokenIs(token::TRUE_));
+        return std::make_unique<ast::BooleanLiteral>(curToken_, curTokenIs(token::TRUE_));
     }
 
     std::unique_ptr<ast::Expression> parseIntegerLiteral() {

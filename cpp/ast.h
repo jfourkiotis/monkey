@@ -203,9 +203,9 @@ private:
     std::unique_ptr<Expression> right_;
 };//~ InfixExpression
 
-class Boolean : public Expression {
+class BooleanLiteral : public Expression {
 public:
-    Boolean(token::Token tok, bool val) : token_(tok), value_(val) {}
+    BooleanLiteral(token::Token tok, bool val) : token_(tok), value_(val) {}
 
     std::string TokenLiteral() const override { return token_.literal; }
 

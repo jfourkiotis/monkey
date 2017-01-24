@@ -259,6 +259,13 @@ static void testIdentifier(const ast::Expression *expression, const std::string&
     REQUIRE(ident->TokenLiteral() == str);
 }
 
+static void testBooleanLiteral(const ast::Expression *expression, bool v) {
+    auto literal = dynamic_cast<const ast::BooleanLiteral *>(expression);
+    REQUIRE(literal);
+    REQUIRE(literal->Value() == v);
+    REQUIRE(literal->TokenLiteral() == std::to_string(v));
+}
+
 static void testLiteralExpression(const ast::Expression *expression, int64_t v) {
     testIntegerLiteral(expression, v);
 }
