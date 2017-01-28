@@ -1,8 +1,7 @@
-import org.scalatest._
 import monkey._
+import org.scalatest._
 
 class ParserSpec extends FlatSpec with Matchers {
-  import token._
   
   "A Parser" should "parse the LET statement" in {
     val input = """
@@ -140,11 +139,7 @@ class ParserSpec extends FlatSpec with Matchers {
       program.statements.foreach { stmt =>
         stmt shouldBe a [ExpressionStatement]
         val expressionStmt = stmt.asInstanceOf[ExpressionStatement]
-        expressionStmt.expression shouldBe a [InfixExpression]
-        val infixExpression = expressionStmt.expression.asInstanceOf[InfixExpression]
-        testIntegerLiteral(infixExpression.left, tt._2)
-        infixExpression.operator should be (tt._3)
-        testIntegerLiteral(infixExpression.right, tt._4)
+        testInfixExpression(expressionStmt.expression, tt._2, tt._3, tt._4)
       }
     })
   }
@@ -200,9 +195,31 @@ class ParserSpec extends FlatSpec with Matchers {
     true
   }
 
+  def testIdentifier(exp: Expression, value: String): Boolean = {
+    exp shouldBe a [Identifier]
+    val identifier = exp.asInstanceOf[Identifier]
+    identifier.value should be (value)
+    identifier.tokenLiteral should be (value)
+    true
+  }
+
+  def testLiteralExpression(exp: Expression, value: Any) = value match {
+    case _:Int => testIntegerLiteral(exp, value.asInstanceOf[Int])
+    case _:Long => testIntegerLiteral(exp, value.asInstanceOf[Long])
+    case _:String => testIdentifier(exp, value.asInstanceOf[String])
+  }
+
+  def testInfixExpression(exp: Expression, left: Any, op: String, right: Any) = {
+    exp shouldBe a [InfixExpression]
+    val infixExpression = exp.asInstanceOf[InfixExpression]
+    testLiteralExpression(infixExpression.left, left)
+    infixExpression.operator should be (op)
+    testLiteralExpression(infixExpression.right, right)
+  }
+
   def checkParserErrors(p: Parser) {
     val errors = p.errors()
-    if (!errors.isEmpty) {
+    if (errors.nonEmpty) {
       info(s"the parser has ${errors.size} errors")
       errors.foreach(err => info(s"$err"))
       errors.size should be (0)
