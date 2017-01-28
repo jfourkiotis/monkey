@@ -263,7 +263,7 @@ static void testBooleanLiteral(const ast::Expression *expression, bool v) {
     auto literal = dynamic_cast<const ast::BooleanLiteral *>(expression);
     REQUIRE(literal);
     REQUIRE(literal->Value() == v);
-    REQUIRE(literal->TokenLiteral() == std::to_string(v));
+    REQUIRE(literal->TokenLiteral() == (v ? "true" : "false"));
 }
 
 static void testLiteralExpression(const ast::Expression *expression, int64_t v) {
@@ -272,6 +272,10 @@ static void testLiteralExpression(const ast::Expression *expression, int64_t v) 
 
 static void testLiteralExpression(const ast::Expression *expression, const std::string& s) {
     testIdentifier(expression, s);
+}
+
+static void testLiteralExpression(const ast::Expression *expression, bool b) {
+    testBooleanLiteral(expression, b);
 }
 
 static void testInfixExpression(const ast::Expression *expression, int64_t l, const std::string& op, int64_t r) {
@@ -311,6 +315,25 @@ TEST_CASE("IntegerLiteralExpression", "[Parsing]") {
     REQUIRE(integer->TokenLiteral() == "5");
 }
 
+template<typename T>
+void TestPrefixCore(const std::string& input, const std::string& op, T val)
+{
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+    checkParserErrors(p);
+
+    REQUIRE(program->size() == 1);
+    auto expressionStmt = 
+        dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+    REQUIRE(expressionStmt);
+    auto prefixExpression = 
+        dynamic_cast<const ast::PrefixExpression *>((expressionStmt->BorrowedExpression()));
+    REQUIRE(prefixExpression);
+    REQUIRE(prefixExpression->Operator() == op);
+    testLiteralExpression(prefixExpression->Right(), val);
+}
+
 
 TEST_CASE("PrefixExpression", "[Parsing]") {
     using std::string;
@@ -325,19 +348,40 @@ TEST_CASE("PrefixExpression", "[Parsing]") {
     };
 
     for (const auto& test : prefixTests) {
-        lexer::Lexer l{test.input};
-        Parser p{l};
-        auto program = p.ParseProgram();
-        checkParserErrors(p);
-
-        REQUIRE(program->size() == 1);
-        auto expressionStmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
-        REQUIRE(expressionStmt);
-        auto prefixExpression = dynamic_cast<const ast::PrefixExpression *>((expressionStmt->BorrowedExpression()));
-        REQUIRE(prefixExpression);
-        REQUIRE(prefixExpression->Operator() == test.op);
-        testIntegerLiteral(prefixExpression->Right(), test.integer_value);
+        TestPrefixCore(test.input, test.op, test.integer_value);
     }
+
+    struct {
+        string input;
+        string op;
+        bool value;
+    } prefixBooleanTests[] = {
+        {"!true;", "!", true},
+        {"!false", "!", false},
+    };
+
+    for (const auto& test : prefixBooleanTests) {
+        TestPrefixCore(test.input, test.op, test.value);
+    }
+}
+
+template<typename T>
+void TestInfixCore(const std::string& input, T left, const std::string &op, T right)
+{
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+    checkParserErrors(p);
+
+    REQUIRE(program->size() == 1);
+    auto expressionStmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+    REQUIRE(expressionStmt);
+    auto infixExpression =
+        dynamic_cast<const ast::InfixExpression *>((expressionStmt->BorrowedExpression()));
+    REQUIRE(infixExpression);
+    testLiteralExpression(infixExpression->Left(), left);
+    REQUIRE(infixExpression->Operator() == op);
+    testLiteralExpression(infixExpression->Right(), right);
 }
 
 TEST_CASE("InfixExpression", "[Parsing]") {
@@ -360,20 +404,22 @@ TEST_CASE("InfixExpression", "[Parsing]") {
     };
 
     for (const auto& test : infixTests) {
-        lexer::Lexer l{test.input};
-        Parser p{l};
-        auto program = p.ParseProgram();
-        checkParserErrors(p);
+        TestInfixCore(test.input, test.left_value, test.op, test.right_value);
+    }
 
-        REQUIRE(program->size() == 1);
-        auto expressionStmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
-        REQUIRE(expressionStmt);
-        auto infixExpression = 
-            dynamic_cast<const ast::InfixExpression *>((expressionStmt->BorrowedExpression()));
-        REQUIRE(infixExpression);
-        testIntegerLiteral(infixExpression->Left(), test.left_value);
-        REQUIRE(infixExpression->Operator() == test.op);
-        testIntegerLiteral(infixExpression->Right(), test.right_value);
+    struct {
+        string input;
+        bool left_value;
+        string op;
+        bool right_value;
+    } infixBooleanTests[] = {
+        { "true == true", true, "==", true },
+        { "true != false", true, "!=", false },
+        { "false == false", false, "==", false },
+    };
+
+    for (const auto& test : infixBooleanTests) {
+        TestInfixCore(test.input, test.left_value, test.op, test.right_value);
     }
 }
 
