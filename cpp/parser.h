@@ -62,6 +62,9 @@ public:
         registerPrefix(FALSE_, [this] {
             return parseBoolean();
         });
+        registerPrefix(LPAREN, [this] {
+            return parseGroupedExpression();
+        });
         registerInfix(PLUS, [this] (auto left) {
             return parseInfixExpression(std::move(left));
         });
@@ -217,6 +220,18 @@ private:
 
     std::unique_ptr<ast::Expression> parseBoolean() {
         return std::make_unique<ast::BooleanLiteral>(curToken_, curTokenIs(token::TRUE_));
+    }
+
+    std::unique_ptr<ast::Expression> parseGroupedExpression() {
+        nextToken();
+
+        auto exp = parseExpression(LOWEST);
+
+        if (!expectPeek(token::RPAREN)) {
+            return nullptr;
+        }
+
+        return exp;
     }
 
     std::unique_ptr<ast::Expression> parseIntegerLiteral() {
