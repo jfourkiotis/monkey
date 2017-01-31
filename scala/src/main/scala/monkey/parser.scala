@@ -45,6 +45,8 @@ class Parser(l: Lexer) {
   registerPrefix(token.INT, parseIntegerLiteral)
   registerPrefix(token.BANG, parsePrefixExpression)
   registerPrefix(token.MINUS, parsePrefixExpression)
+  registerPrefix(token.TRUE, parseBooleanLiteral)
+  registerPrefix(token.FALSE, parseBooleanLiteral)
   //
   registerInfix(token.PLUS, parseInfixExpression)
   registerInfix(token.MINUS, parseInfixExpression)
@@ -190,6 +192,9 @@ class Parser(l: Lexer) {
         null
       }
     }
+
+  private def parseBooleanLiteral(): BooleanLiteral =
+    BooleanLiteral(curToken, curTokenIs(token.TRUE))
 
   private def curTokenIs(t: token.TokenType) = curToken.ttype == t
   private def peekTokenIs(t: token.TokenType) = peekToken.ttype == t

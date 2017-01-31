@@ -93,7 +93,12 @@ class ParserSpec extends FlatSpec with Matchers {
   }
 
   "A Parser" should "parse prefix operators" in {
-    val prefixTests = List(("!5;", "!", 5), ("-15;", "-", 15))
+    val prefixTests = List(
+      ("!5;", "!", 5),
+      ("-15;", "-", 15),
+      ("!true;", "!", true),
+      ("!false;", "!", false)
+    )
 
     prefixTests.foreach( tt => {
       val lexer = new Lexer(tt._1)
@@ -110,7 +115,7 @@ class ParserSpec extends FlatSpec with Matchers {
         expressionStmt.expression shouldBe a [PrefixExpression]
         val prefixExpression = expressionStmt.expression.asInstanceOf[PrefixExpression]
         prefixExpression.operator should be (tt._2)
-        testIntegerLiteral(prefixExpression.right, tt._3)
+        testLiteralExpression(prefixExpression.right, tt._3)
       }
     })
   }
@@ -124,7 +129,10 @@ class ParserSpec extends FlatSpec with Matchers {
       ("5 > 5;", 5, ">", 5),
       ("5 < 5;", 5, "<", 5),
       ("5 == 5;", 5, "==", 5),
-      ("5 != 5;", 5, "!=", 5)
+      ("5 != 5;", 5, "!=", 5),
+      ("true == true", true, "==", true),
+      ("true != false", true, "!=", false),
+      ("false == false", false, "==", false)
       )
 
     infixTests.foreach( tt => {
@@ -158,7 +166,11 @@ class ParserSpec extends FlatSpec with Matchers {
       ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
       ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
       ("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
-      ("3 + 4 * 5 != 3 * 1 + 4 * 5", "((3 + (4 * 5)) != ((3 * 1) + (4 * 5)))")
+      ("3 + 4 * 5 != 3 * 1 + 4 * 5", "((3 + (4 * 5)) != ((3 * 1) + (4 * 5)))"),
+      ("true", "true"),
+      ("false", "false"),
+      ("3 > 5 == false", "((3 > 5) == false)"),
+      ("3 < 5 == true", "((3 < 5) == true)")
     )
    tests.foreach( tt => {
     val lexer = new Lexer(tt._1)
@@ -167,7 +179,6 @@ class ParserSpec extends FlatSpec with Matchers {
     checkParserErrors(parser)
 
     val actual = program.toString
-    info(actual)
     actual should be (tt._2)
    })
   }
@@ -184,10 +195,9 @@ class ParserSpec extends FlatSpec with Matchers {
     true
   }
 
-  def testIntegerLiteral(stmt: Expression, value: Long): Boolean = {
-    
-    stmt shouldBe a [IntegerLiteral]
-    val integer = stmt.asInstanceOf[IntegerLiteral]
+  def testIntegerLiteral(exp: Expression, value: Long): Boolean = {
+    exp shouldBe a [IntegerLiteral]
+    val integer = exp.asInstanceOf[IntegerLiteral]
     integer.value should be (value)
 
     val str = value.toString
@@ -203,9 +213,18 @@ class ParserSpec extends FlatSpec with Matchers {
     true
   }
 
+  def testBooleanLiteral(exp: Expression, value: Boolean): Boolean = {
+    exp shouldBe a [BooleanLiteral]
+    val bo = exp.asInstanceOf[BooleanLiteral]
+    bo.value should be (value)
+    bo.tokenLiteral should be (value.toString)
+    true
+  }
+
   def testLiteralExpression(exp: Expression, value: Any) = value match {
     case _:Int => testIntegerLiteral(exp, value.asInstanceOf[Int])
     case _:Long => testIntegerLiteral(exp, value.asInstanceOf[Long])
+    case _:Boolean => testBooleanLiteral(exp, value.asInstanceOf[Boolean])
     case _:String => testIdentifier(exp, value.asInstanceOf[String])
   }
 

@@ -101,3 +101,8 @@ case class InfixExpression(token: Token, left: Expression, operator: String, rig
   }
 }
 
+case class BooleanLiteral(token: Token, value: Boolean) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = token.literal
+}
+
