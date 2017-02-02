@@ -263,6 +263,24 @@ public:
     const(Expression) right() const @property { return right_; }
 }
 
+class BooleanLiteral : Expression {
+private:
+    Token token_;
+    bool value_;
+public:
+    @disable this();
+
+    this(Token token, bool value) {
+        token_ = token;
+        value_ = value;
+    }
+
+    override string tokenLiteral() const { return token_.literal; }
+    override string toString() const { return token_.literal; }
+
+    bool value() const @property { return value_; }
+}
+
 unittest {
     auto program = new Program([
             new LetStatement(

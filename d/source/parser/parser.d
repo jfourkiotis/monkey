@@ -210,6 +210,10 @@ private:
         return null;
     }
 
+    Expression parseBooleanLiteral() {
+        return new BooleanLiteral(curToken_, curTokenIs(token.TRUE));
+    }
+
 public:
     @disable this();
 
@@ -222,6 +226,8 @@ public:
         registerPrefix(INT, delegate() { return parseIntegerLiteral(); });
         registerPrefix(BANG, delegate() { return parsePrefixExpression(); });
         registerPrefix(MINUS, delegate() { return parsePrefixExpression(); });
+        registerPrefix(TRUE, delegate() { return parseBooleanLiteral(); });
+        registerPrefix(FALSE, delegate() { return parseBooleanLiteral(); });
         //
         registerInfix(PLUS, delegate(Expression left) { return parseInfixExpression(left); });
         registerInfix(MINUS, delegate(Expression left) { return parseInfixExpression(left); });
@@ -363,17 +369,27 @@ unittest {
         assert(literal.tokenLiteral == "5");
     }
 
-    void testIntegerLiteral(const(Expression) expression, long value) {
+    void testLiteral(T, N)(const(Expression) expression, T value) {
         import std.conv;
-        auto integer = cast(IntegerLiteral) expression;
-        assert(integer, format("expected IntegerLiteral, got '%s'", integer));
-        assert(integer.value == value);
-        assert(integer.tokenLiteral == to!string(value));
+        auto n = cast(N) expression;
+        assert(n, format("expected '%s', got '%s'", N.stringof, n));
+        assert(n.value == value);
+        assert(n.tokenLiteral == to!string(value));
+    }
+
+    void PrefixTestCore(T, N)(const(Statement) stmt, string operator, T value)
+    {
+        auto expressionStmt = cast(ExpressionStatement) stmt;
+        assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement!. got '%s'", expressionStmt));
+        auto prefixExpression = cast(PrefixExpression) expressionStmt.expression;
+        assert(prefixExpression !is null, format("expected PrefixExpression, got '%s'", prefixExpression));
+        assert(prefixExpression.operator == operator);
+        testLiteral!(T, N)(prefixExpression.right, value);
     }
 
     {// PREFIX EXPRESSIONS
-        struct PrefixTest { string input; string operator; long integerValue; }
-        PrefixTest[] prefixTests = [
+        struct PrefixTest(T) { string input; string operator; T integerValue; }
+        PrefixTest!long[] prefixTests = [
             { input: "!5;" , operator: "!", integerValue: 5 },
             { input: "-15;", operator: "-", integerValue: 15},
         ];
@@ -386,20 +402,40 @@ unittest {
 
             assert(program !is null, "parseProgram() returned null");
             assert(program.length == 1, "program.statements does not contain 1 statements");
+            PrefixTestCore!(long, IntegerLiteral)(program[0], tt.operator, tt.integerValue);
+        }
 
-            auto expressionStmt = cast(ExpressionStatement) program[0];
-            assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement. got '%s'", expressionStmt));
+        PrefixTest!bool[] prefixTests2 = [
+            {"!true;" , "!", true },
+            {"!false;", "!", false},
+        ];
 
-            auto prefixExpression = cast(PrefixExpression) expressionStmt.expression;
-            assert(prefixExpression !is null, format("expected PrefixExpression, got '%s'", prefixExpression));
-            assert(prefixExpression.operator == tt.operator);
-            testIntegerLiteral(prefixExpression.right, tt.integerValue);
+        foreach(tt; prefixTests2) {
+            auto l = Lexer(tt.input);
+            auto p = Parser(l);
+            auto program = p.parseProgram();
+            checkParserErrors(p);
+
+            assert(program !is null, "parseProgram() returned null");
+            assert(program.length == 1, "program.statements does not contain 1 statements");
+            PrefixTestCore!(bool, BooleanLiteral)(program[0], tt.operator, tt.integerValue);
         }
     }
 
+    void InfixTestCore(T, N)(const(Statement) stmt, T left, string operator, T right)
+    {
+        auto expressionStmt = cast(ExpressionStatement) stmt;
+        assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement!. got '%s'", expressionStmt));
+        auto infixExpression = cast(InfixExpression) expressionStmt.expression;
+        assert(infixExpression !is null, format("expected InfixExpression, got '%s'", infixExpression));
+        testLiteral!(T, N)(infixExpression.left, left);
+        assert(infixExpression.operator == operator);
+        testLiteral!(T, N)(infixExpression.right, right);
+    }
+
     {// INFIX EXPRESSIONS
-        struct InfixTest { string input; long leftValue; string operator; long rightValue; }
-        InfixTest[] infixTests = [
+        struct InfixTest(T) { string input; T leftValue; string operator; T rightValue; }
+        InfixTest!long[] infixTests = [
             { input: "5 + 5;", leftValue: 5, operator: "+" , rightValue: 5 },
             { input: "5 - 5;", leftValue: 5, operator: "-" , rightValue: 5 },
             { input: "5 * 5;", leftValue: 5, operator: "*" , rightValue: 5 },
@@ -419,14 +455,25 @@ unittest {
             assert(program !is null, "parseProgram() returned null");
             assert(program.length == 1, "program.statements does not contain 1 statements");
 
-            auto expressionStmt = cast(ExpressionStatement) program[0];
-            assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement. got '%s'", expressionStmt));
+            InfixTestCore!(long, IntegerLiteral)(program[0], tt.leftValue, tt.operator, tt.rightValue);
+        }
 
-            auto infixExpression = cast(InfixExpression) expressionStmt.expression;
-            assert(infixExpression !is null, format("expected InfixExpression, got '%s'", infixExpression));
-            testIntegerLiteral(infixExpression.left, tt.leftValue);
-            assert(infixExpression.operator == tt.operator);
-            testIntegerLiteral(infixExpression.right, tt.rightValue);
+        InfixTest!bool[] infixTests2 = [
+            { input: "true == true"  , true , "==", true  },
+            { input: "true != false" , true , "!=", false },
+            { input: "false == false", false, "==", false },
+        ];
+
+        foreach(tt; infixTests2) {
+            auto l = Lexer(tt.input);
+            auto p = Parser(l);
+            auto program = p.parseProgram();
+            checkParserErrors(p);
+
+            assert(program !is null, "parseProgram() returned null");
+            assert(program.length == 1, "program.statements does not contain 1 statements");
+
+            InfixTestCore!(bool, BooleanLiteral)(program[0], tt.leftValue, tt.operator, tt.rightValue);
         }
     }
 
@@ -446,6 +493,10 @@ unittest {
             { input: "5 < 4 != 3 > 4", expected: "((5 < 4) != (3 > 4))" },
             { input: "3 + 4 * 5 == 3 * 1 + 4 * 5", expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))" },
             { input: "3 + 4 * 5 == 3 * 1 + 4 * 5", expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))" },
+            { input: "true", expected: "true" },
+            { input: "false", expected: "false" },
+            { input: "3 > 5 == false", expected: "((3 > 5) == false)" },
+            { input: "3 < 5 == true", expected: "((3 < 5) == true)" },
         ];
         
         foreach(tt; tests) {
