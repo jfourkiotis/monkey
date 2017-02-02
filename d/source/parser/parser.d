@@ -176,6 +176,15 @@ private:
         return new InfixExpression(current, left, operator, right);
     }
 
+    Expression parseGroupedExpression() {
+        nextToken();
+        auto exp = parseExpression(Precedence.LOWEST);
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+        return exp;
+    }
+
     bool curTokenIs(TokenType t) const {
         return curToken_.type == t;
     }
@@ -228,6 +237,7 @@ public:
         registerPrefix(MINUS, delegate() { return parsePrefixExpression(); });
         registerPrefix(TRUE, delegate() { return parseBooleanLiteral(); });
         registerPrefix(FALSE, delegate() { return parseBooleanLiteral(); });
+        registerPrefix(LPAREN, delegate() { return parseGroupedExpression(); });
         //
         registerInfix(PLUS, delegate(Expression left) { return parseInfixExpression(left); });
         registerInfix(MINUS, delegate(Expression left) { return parseInfixExpression(left); });
@@ -497,6 +507,11 @@ unittest {
             { input: "false", expected: "false" },
             { input: "3 > 5 == false", expected: "((3 > 5) == false)" },
             { input: "3 < 5 == true", expected: "((3 < 5) == true)" },
+            { input: "1 + (2 + 3) + 4", expected: "((1 + (2 + 3)) + 4)" },
+            { input: "(5 + 5) * 2", expected: "((5 + 5) * 2)" },
+            { input: "2 / (5 + 5)", expected: "(2 / (5 + 5))" },
+            { input: "-(5 + 5)", expected: "(-(5 + 5))" },
+            { input: "!(true == true)", expected: "(!(true == true))" },
         ];
         
         foreach(tt; tests) {

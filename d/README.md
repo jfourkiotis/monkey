@@ -9,4 +9,5 @@
 * v0.2.6c Parse ! & - prefix operators
 * v0.2.6d Parse infix operator expressions
 * v0.2.8a Parse boolean literals
+* v0.2.8b Parse parenthesized expressions
 
