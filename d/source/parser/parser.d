@@ -185,6 +185,57 @@ private:
         return exp;
     }
 
+    Expression parseIfExpression() {
+        auto current = curToken_; // if
+        
+        if (!expectPeek(LPAREN)) {
+            return null;
+        }
+
+        nextToken();
+        auto condition = parseExpression(Precedence.LOWEST);
+
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+
+        if (!expectPeek(LBRACE)) {
+            return null;
+        }
+
+        auto consequence = parseBlockStatement();
+
+        BlockStatement alternative = null;
+        if (peekTokenIs(ELSE)) {
+            nextToken();
+
+            if (!expectPeek(LBRACE)) {
+                return null;
+            }
+
+            alternative = parseBlockStatement();
+        }   
+
+        return new IfExpression(current, condition, consequence, alternative);
+    }
+
+    BlockStatement parseBlockStatement() {
+        auto current = curToken_;
+        Statement[] statements;
+
+        nextToken();
+
+        while (!curTokenIs(RBRACE)) {
+            auto stmt = parseStatement();
+            if (stmt !is null) {
+                statements ~= stmt;
+            }
+            nextToken();
+        }
+
+        return new BlockStatement(current, statements);
+    }
+
     bool curTokenIs(TokenType t) const {
         return curToken_.type == t;
     }
@@ -238,6 +289,7 @@ public:
         registerPrefix(TRUE, delegate() { return parseBooleanLiteral(); });
         registerPrefix(FALSE, delegate() { return parseBooleanLiteral(); });
         registerPrefix(LPAREN, delegate() { return parseGroupedExpression(); });
+        registerPrefix(IF, delegate() { return parseIfExpression(); });
         //
         registerInfix(PLUS, delegate(Expression left) { return parseInfixExpression(left); });
         registerInfix(MINUS, delegate(Expression left) { return parseInfixExpression(left); });
@@ -432,15 +484,22 @@ unittest {
         }
     }
 
-    void InfixTestCore(T, N)(const(Statement) stmt, T left, string operator, T right)
+    void InfixTestCore0(T, N)(const(Expression) exp, T left, string operator, T right)
     {
-        auto expressionStmt = cast(ExpressionStatement) stmt;
-        assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement!. got '%s'", expressionStmt));
-        auto infixExpression = cast(InfixExpression) expressionStmt.expression;
+        auto infixExpression = cast(InfixExpression) exp;
         assert(infixExpression !is null, format("expected InfixExpression, got '%s'", infixExpression));
         testLiteral!(T, N)(infixExpression.left, left);
         assert(infixExpression.operator == operator);
         testLiteral!(T, N)(infixExpression.right, right);
+
+    }
+
+    void InfixTestCore(T, N)(const(Statement) stmt, T left, string operator, T right)
+    {
+        auto expressionStmt = cast(ExpressionStatement) stmt;
+        assert(expressionStmt !is null, format("expressionStmt is not an ExpressionStatement!. got '%s'", expressionStmt));
+
+        InfixTestCore0!(T, N)(expressionStmt.expression, left, operator, right);
     }
 
     {// INFIX EXPRESSIONS
@@ -523,6 +582,34 @@ unittest {
 
             assert(program.toString == tt.expected, format("Got '%s', Expected '%s'", program.toString, tt.expected));
         }
+    }
+
+    { // IF EXPRESSION
+        auto input = "if (x < y) { x }";
+        auto l = Lexer(input);
+        auto p = Parser(l);
+        auto program = p.parseProgram();
+        checkParserErrors(p);
+
+        assert(program !is null);
+        assert(program.length == 1);
+
+        auto expressionStmt = cast(ExpressionStatement) program[0];
+        assert(expressionStmt);
+
+        auto ifExpression = cast(IfExpression) expressionStmt.expression;
+        assert(ifExpression, format("Expected IfExpression, got '%s'", expressionStmt.expression));
+
+        InfixTestCore0!(string, Identifier)(ifExpression.condition, "x", "<", "y");
+
+        assert(ifExpression.consequence.length == 1);
+        auto consequence = cast(ExpressionStatement) ifExpression.consequence[0];
+        assert(consequence);
+
+        testLiteral!(string, Identifier)(consequence.expression, "x");
+        
+        assert(ifExpression.alternative is null);
+
     }
 }
 

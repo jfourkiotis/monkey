@@ -281,6 +281,82 @@ public:
     bool value() const @property { return value_; }
 }
 
+class BlockStatement : Statement {
+private:
+    Token token_;
+    Statement[] statements_;
+public:
+    @disable this();
+
+    this(Token token, Statement[] statements) {
+        token_ = token;
+        statements_ = statements;
+    }
+
+    override string tokenLiteral() const { return token_.literal; }
+    override string toString() const {
+        char[] buf;
+
+        foreach(stmt; statements_) {
+            buf ~= stmt.toString();
+        }
+
+        return buf.idup;
+    }
+
+    ulong length() const @property { return statements_.length; }
+
+    inout(Statement) opIndex(size_t index) inout {
+        return statements_[index];
+    }
+}
+
+class IfExpression : Expression {
+private:
+    Token token_; // the `if` token
+    Expression condition_;
+    BlockStatement consequence_;
+    BlockStatement alternative_;
+public:
+    @disable this();
+
+    this(Token token, Expression condition, BlockStatement consequence, BlockStatement alternative) {
+        token_ = token;
+        condition_ = condition;
+        consequence_ = consequence;
+        alternative_ = alternative;
+    }
+
+    override string tokenLiteral() const { return token_.literal; }
+    override string toString() const {
+        char[] buf;
+
+        buf ~= "if";
+        buf ~= condition_.toString();
+        buf ~= ' ';
+        buf ~= consequence_.toString();
+
+        if (alternative_ !is null) {
+            buf ~= "else ";
+            buf ~= alternative_.toString();
+        }
+
+        return buf.idup;
+    }
+
+    const(Expression) condition() const @property {
+        return condition_;
+    }
+
+    const(BlockStatement) consequence() const @property {
+        return consequence_;
+    }
+
+    const(BlockStatement) alternative() const @property {
+        return alternative_;
+    }
+}
+
 unittest {
     auto program = new Program([
             new LetStatement(
