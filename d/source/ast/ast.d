@@ -357,6 +357,83 @@ public:
     }
 }
 
+class FunctionLiteral : Expression {
+private:
+    Token token_;
+    Identifier[] parameters_; // pointer to a Identifier[] originally
+    BlockStatement fbody_;     // pointer to a BlockStatement originally
+public:
+    @disable this();
+
+    this(Token token, Identifier[] parameters, BlockStatement fbody) {
+        token_ = token;
+        parameters_ = parameters;
+        fbody_ = fbody;
+    }
+
+    override string tokenLiteral() const { return token_.literal; }
+    override string toString() const {
+        import std.array : join;
+
+        char[] buf;
+
+        string[] params;
+        foreach (p; parameters_) {
+            params ~= p.toString();
+        }
+
+        buf ~= tokenLiteral();
+        buf ~= '(';
+
+        buf ~= params.join(','); 
+
+        buf ~= ')';
+        buf ~= fbody_.toString();
+
+        return buf.idup;
+    }
+
+    const(Identifier[]) parameters() const { return parameters_; }
+    const(BlockStatement) fbody() const { return fbody_; }
+};
+
+class CallExpression : Expression {
+private:
+    Token token_;
+    Expression function_;
+    Expression[] arguments_;
+public:
+    @disable this();
+
+    this(Token token, Expression func, Expression[] arguments) {
+        token_ = token;
+        function_ = func;
+        arguments_ = arguments;
+    }
+
+    override string tokenLiteral() const { return token_.literal; }
+    override string toString() const { 
+        import std.array : join;
+
+        string[] args;
+        foreach(arg; arguments_) {
+            args ~= arg.toString;
+        }
+
+        char[] buf;
+
+        buf ~= function_.toString;
+        buf ~= '(';
+        buf ~= args.join(", ");
+        buf ~= ')';
+
+        return buf.idup;
+    }
+
+    const(Expression) func() const @property { return function_; }
+    const(Expression[]) arguments() const @property { return arguments_; }
+}
+
 unittest {
     auto program = new Program([
             new LetStatement(

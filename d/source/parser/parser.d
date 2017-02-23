@@ -30,6 +30,7 @@ private:
         precedences[MINUS] = Precedence.SUM;    
         precedences[SLASH] = Precedence.PRODUCT;    
         precedences[ASTERISK] = Precedence.PRODUCT;    
+        precedences[LPAREN] = Precedence.CALL;
     }
 
     Lexer lexer_;
@@ -98,13 +99,15 @@ private:
             return null;
         }
 
-        // TODO: We're skipping the expressions until we
-        // encounter a semicolon
-        while (!curTokenIs(SEMICOLON)) {
+        nextToken();
+
+        auto value = parseExpression(Precedence.LOWEST);
+
+        if (peekTokenIs(SEMICOLON)) {
             nextToken();
         }
 
-        return new LetStatement(letToken, name, null);
+        return new LetStatement(letToken, name, value);
     }
 
     ReturnStatement parseReturnStatement() {
@@ -112,11 +115,13 @@ private:
 
         nextToken();
 
-        while(!curTokenIs(SEMICOLON)) {
+        auto retval = parseExpression(Precedence.LOWEST);
+
+        if (peekTokenIs(SEMICOLON)) {
             nextToken();
         }
 
-        return new ReturnStatement(retToken, null);
+        return new ReturnStatement(retToken, retval);
     }
 
     ExpressionStatement parseExpressionStatement() {
@@ -185,6 +190,36 @@ private:
         return exp;
     }
 
+    Expression parseCallExpression(Expression func) {
+        auto current = curToken_;
+        auto arguments = parseCallArguments();
+        return new CallExpression(current, func, arguments);
+    }
+
+    Expression[] parseCallArguments() {
+        Expression[] args;
+
+        if (peekTokenIs(RPAREN)) {
+            nextToken();
+            return args;
+        }
+
+        nextToken();
+        args ~= parseExpression(Precedence.LOWEST);
+
+        while (peekTokenIs(COMMA)) {
+            nextToken();
+            nextToken();
+            args ~= parseExpression(Precedence.LOWEST);
+        }
+
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+
+        return args;
+    }
+
     Expression parseIfExpression() {
         auto current = curToken_; // if
         
@@ -217,6 +252,50 @@ private:
         }   
 
         return new IfExpression(current, condition, consequence, alternative);
+    }
+
+    Expression parseFunctionLiteral() {
+        auto current = curToken_; // fn
+
+        if (!expectPeek(LPAREN)) {
+            return null;
+        }
+
+        auto parameters = parseFunctionParameters();
+        
+        if (!expectPeek(LBRACE)) {
+            return null;
+        }
+
+        auto fbody = parseBlockStatement();
+        return new FunctionLiteral(current, parameters, fbody);
+    }
+
+    Identifier[] parseFunctionParameters() {
+        Identifier[] identifiers;
+
+        if (peekTokenIs(RPAREN)) {
+            nextToken();
+            return identifiers;
+        }
+
+        nextToken();
+
+        auto ident = new Identifier(curToken_, curToken_.literal);
+        identifiers ~= ident;
+
+        while (peekTokenIs(COMMA)) {
+            nextToken();
+            nextToken();
+            ident = new Identifier(curToken_, curToken_.literal);
+            identifiers ~= ident;
+        }
+
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+
+        return identifiers;
     }
 
     BlockStatement parseBlockStatement() {
@@ -290,6 +369,7 @@ public:
         registerPrefix(FALSE, delegate() { return parseBooleanLiteral(); });
         registerPrefix(LPAREN, delegate() { return parseGroupedExpression(); });
         registerPrefix(IF, delegate() { return parseIfExpression(); });
+        registerPrefix(FUNCTION, delegate() { return parseFunctionLiteral(); });
         //
         registerInfix(PLUS, delegate(Expression left) { return parseInfixExpression(left); });
         registerInfix(MINUS, delegate(Expression left) { return parseInfixExpression(left); });
@@ -299,6 +379,7 @@ public:
         registerInfix(NOT_EQ, delegate(Expression left) { return parseInfixExpression(left); });
         registerInfix(LT, delegate(Expression left) { return parseInfixExpression(left); });
         registerInfix(GT, delegate(Expression left) { return parseInfixExpression(left); });
+        registerInfix(LPAREN, delegate(Expression left) { return parseCallExpression(left); });
     }
 
     string[] errors() { return errors_.dup; }
@@ -335,10 +416,12 @@ unittest {
         }
     }
 
-    {
+    { // LET
         string input = "let x = 5;" ~
             "let y = 10;" ~
-            "let foobar = 838383;";
+            "let foobar = 838383;" ~
+            "let z = true;" ~
+            "let foo = y;";
 
         auto l = Lexer(input);
         auto p = Parser(l);
@@ -347,13 +430,15 @@ unittest {
         checkParserErrors(p);
 
         assert(program !is null, "parseProgram() returned null");
-        assert(program.length == 3, "program.statements does not contain 3 statements");
+        assert(program.length == 5, "program.statements does not contain 3 statements");
 
         struct T{ string expectedIdentifier; } 
         T[] tests = [
             T("x"),
             T("y"),
-            T("foobar")
+            T("foobar"),
+            T("z"),
+            T("foo")
         ];
 
         bool testLetStatement(Statement stmt, string name) {
@@ -571,6 +656,9 @@ unittest {
             { input: "2 / (5 + 5)", expected: "(2 / (5 + 5))" },
             { input: "-(5 + 5)", expected: "(-(5 + 5))" },
             { input: "!(true == true)", expected: "(!(true == true))" },
+            { input: "a + add(b * c) + d", expected: "((a + add((b * c))) + d)" },
+            { input: "add(a + b + c * d / f + g)", expected: "add((((a + b) + ((c * d) / f)) + g))" },
+            { input: "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", expected: "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))" }
         ];
         
         foreach(tt; tests) {
@@ -610,6 +698,80 @@ unittest {
         
         assert(ifExpression.alternative is null);
 
+    }
+
+    { // FUNC LITERALS
+        auto input = "fn(x, y) { x + y; }";
+        auto l = Lexer(input);
+        auto p = Parser(l);
+        auto program = p.parseProgram();
+        checkParserErrors(p);
+
+        assert(program !is null);
+        assert(program.length == 1);
+
+        auto expressionStmt = cast(ExpressionStatement) program[0];
+        assert(expressionStmt);
+
+        auto func = cast(FunctionLiteral) expressionStmt.expression;
+        assert(func);
+        assert(func.parameters.length == 2);
+
+        testLiteral!(string, Identifier)(func.parameters[0], "x");
+        testLiteral!(string, Identifier)(func.parameters[1], "y");
+
+        assert(func.fbody.length == 1);
+
+        InfixTestCore!(string, Identifier)(func.fbody[0], "x", "+", "y");
+    }
+
+    {// FUNC PARAMETERS
+        struct FuncParamTest { string input; string[] expectedParams; }
+        FuncParamTest[] tests = [
+            { input: "fn() {};" , expectedParams: [] },
+            { input: "fn(x) {};", expectedParams: ["x"] },
+            { input: "fn(x, y, z) {};", expectedParams: ["x", "y", "z"] }
+        ];
+
+        foreach(tt; tests) {
+            auto l = Lexer(tt.input);
+            auto p = Parser(l);
+            auto program = p.parseProgram();
+            checkParserErrors(p);
+
+            auto expressionStmt = cast(ExpressionStatement) program[0];
+            assert(expressionStmt);
+            
+            auto func = cast(FunctionLiteral) expressionStmt.expression;
+            assert(func.parameters.length == tt.expectedParams.length);
+
+            foreach(i, ident; tt.expectedParams) {
+                testLiteral!(string, Identifier)(func.parameters[i], ident);
+            }
+        }
+            
+    }
+
+    {// CALL EXPRESSIONS
+        auto input = "add(1, 2 * 3, 4 + 5);";
+        auto l = Lexer(input);
+        auto p = Parser(l);
+        auto program = p.parseProgram();
+        checkParserErrors(p);
+
+        assert(program !is null);
+        assert(program.length == 1);
+
+        auto expressionStmt = cast(ExpressionStatement) program[0];
+        assert(expressionStmt !is null);
+        auto callExpression = cast(CallExpression) expressionStmt.expression;
+        assert(callExpression !is null);
+
+        testLiteral!(string, Identifier)(callExpression.func, "add");
+        assert(callExpression.arguments.length == 3, format("length was %d", callExpression.arguments.length));
+        testLiteral!(long, IntegerLiteral)(callExpression.arguments[0], 1);
+        InfixTestCore0!(long, IntegerLiteral)(callExpression.arguments[1], 2, "*", 3); 
+        InfixTestCore0!(long, IntegerLiteral)(callExpression.arguments[2], 4, "+", 5); 
     }
 }
 

@@ -11,4 +11,6 @@
 * v0.2.8a Parse boolean literals
 * v0.2.8b Parse parenthesized expressions
 * v0.2.8c Parse IF expressions
+* v0.2.8d Parser Function literals and call expressions
+* v0.2.9  The REPL prints the expression's string representation
 
