@@ -101,8 +101,37 @@ case class InfixExpression(token: Token, left: Expression, operator: String, rig
   }
 }
 
+case class BlockStatement(token: Token, statements: List[Statement]) extends Statement {
+  override def tokenLiteral = token.literal
+  override lazy val toString = {
+    val buf = new StringBuilder
+
+    statements.foreach(stmt => buf ++= stmt.toString)
+
+    buf.toString
+  }
+}
+
 case class BooleanLiteral(token: Token, value: Boolean) extends Expression {
   override def tokenLiteral = token.literal
   override lazy val toString = token.literal
 }
 
+case class IfExpression(token: Token, condition: Expression, consequence: BlockStatement, alternative: BlockStatement) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = {
+    val buf = new StringBuilder
+
+    buf ++= "if"
+    buf ++= condition.toString
+    buf += ' '
+    buf ++= consequence.toString
+
+    if (alternative != null) {
+      buf ++= "else"
+      buf ++= alternative.toString
+    }
+
+    buf.toString
+  }
+}

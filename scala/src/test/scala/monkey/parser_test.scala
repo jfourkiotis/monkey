@@ -189,6 +189,31 @@ class ParserSpec extends FlatSpec with Matchers {
    })
   }
 
+  "A Parser" should "parse IF expressions" in {
+    val input = "if (x < y) { x }"
+    val lexer = new Lexer(input)
+    val parser = new Parser(lexer)
+    val program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    program should not be null
+    program.statements.size should be (1)
+
+    program.statements.foreach { stmt =>
+      stmt shouldBe a [ExpressionStatement]
+      val expressionStmt = stmt.asInstanceOf[ExpressionStatement]
+      expressionStmt.expression shouldBe a [IfExpression]
+      val ifExpression = expressionStmt.expression.asInstanceOf[IfExpression]
+      testInfixExpression(ifExpression.condition, "x", "<", "y")
+      ifExpression.consequence.statements.size should be (1)
+      ifExpression.consequence.statements.head shouldBe a [ExpressionStatement]
+      val consequence = ifExpression.consequence.statements.head.asInstanceOf[ExpressionStatement]
+      testIdentifier(consequence.expression, "x")
+      ifExpression.alternative should be (null)
+    }
+
+  }
+
   def testLetStatement(stmt: Statement, name: String): Boolean = {
 
     stmt.tokenLiteral should be ("let")

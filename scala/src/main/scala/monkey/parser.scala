@@ -48,6 +48,7 @@ class Parser(l: Lexer) {
   registerPrefix(token.TRUE, parseBooleanLiteral)
   registerPrefix(token.FALSE, parseBooleanLiteral)
   registerPrefix(token.LPAREN, parseGroupedExpression)
+  registerPrefix(token.IF, parseIfExpression)
   //
   registerInfix(token.PLUS, parseInfixExpression)
   registerInfix(token.MINUS, parseInfixExpression)
@@ -201,6 +202,43 @@ class Parser(l: Lexer) {
     nextToken();
     val exp = parseExpression(Precedence.LOWEST)
     if (!expectPeek(token.RPAREN)) null else exp
+  }
+
+  private def parseIfExpression(): Expression = {
+    val current = curToken
+    if (!expectPeek(token.LPAREN)) {
+      null
+    } else {
+      nextToken()
+      val condition = parseExpression(Precedence.LOWEST)
+      if (!expectPeek(token.RPAREN)) {
+        null
+      } else {
+        if (!expectPeek(token.LBRACE)) {
+          null
+        } else {
+          val consequence = parseBlockStatement()
+          IfExpression(current, condition, consequence, null)
+        }
+      }
+    }
+  }
+
+  private def parseBlockStatement(): BlockStatement = {
+    val current = curToken
+    var statements = scala.collection.mutable.ListBuffer[Statement]()
+
+    nextToken()
+
+    while (!curTokenIs(token.RBRACE)) {
+      val stmt = parseStatement()
+      if (stmt != null) {
+        statements += stmt
+      }
+      nextToken()
+    }
+
+    BlockStatement(current, statements.toList)
   }
 
   private def curTokenIs(t: token.TokenType) = curToken.ttype == t
