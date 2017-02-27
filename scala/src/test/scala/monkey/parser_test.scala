@@ -214,6 +214,64 @@ class ParserSpec extends FlatSpec with Matchers {
 
   }
 
+  "A Parser" should "parse FN literals" in {
+    val input = "fn(x, y) { x + y; }"
+    val lexer = new Lexer(input)
+    val parser = new Parser(lexer)
+    val program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    program should not be null
+    program.statements.size should be (1)
+    program.statements.head shouldBe a [ExpressionStatement]
+
+    val expressionStmt = program.statements.head.asInstanceOf[ExpressionStatement]
+    expressionStmt.expression shouldBe a [FunctionLiteral]
+
+    val funcLiteral = expressionStmt.expression.asInstanceOf[FunctionLiteral]
+    funcLiteral.parameters.length should be (2)
+
+    testLiteralExpression(funcLiteral.parameters.head, "x")
+    testLiteralExpression(funcLiteral.parameters.tail.head, "y")
+
+    funcLiteral.body.statements.length should be (1)
+    funcLiteral.body.statements.head shouldBe a [ExpressionStatement]
+
+    val bodyStmt = funcLiteral.body.statements.head.asInstanceOf[ExpressionStatement]
+    testInfixExpression(bodyStmt.expression, "x", "+", "y")
+
+  }
+
+  "A Parser" should "parse FN parameters" in {
+    case class Test(input: String, expectedParams: List[String])
+
+    val tests = List(
+      Test("fn() {};", Nil),
+      Test("fn(x) {};", List("x")),
+      Test("fn(x, y, z) {};", List("x", "y", "z")))
+
+    tests.foreach { tt =>
+      val lexer = new Lexer(tt.input)
+      val parser = new Parser(lexer)
+      val program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      program should not be null
+      program.statements.length should be (1)
+      program.statements.head shouldBe a [ExpressionStatement]
+
+      val expressionStatement = program.statements.head.asInstanceOf[ExpressionStatement]
+      expressionStatement.expression shouldBe a [FunctionLiteral]
+      val funcLiteral = expressionStatement.expression.asInstanceOf[FunctionLiteral]
+
+      funcLiteral.parameters.length should be (tt.expectedParams.length)
+
+      funcLiteral.parameters zip (tt.expectedParams) foreach { t =>
+        testLiteralExpression(t._1, t._2)
+      }
+    }
+  }
+
   def testLetStatement(stmt: Statement, name: String): Boolean = {
 
     stmt.tokenLiteral should be ("let")

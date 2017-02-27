@@ -11,3 +11,4 @@
 * v0.2.8a The parser can handle boolean literals
 * v0.2.8b The parser can handle parenthesized expressions
 * v0.2.8c The parser can handle IF statements
+* v0.2.8d The parser can handle FN literals

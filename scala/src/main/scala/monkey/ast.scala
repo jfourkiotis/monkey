@@ -2,6 +2,8 @@ package monkey
 
 import token._
 
+import scala.collection.mutable.ListBuffer
+
 trait Node {
   def tokenLiteral: String
 }
@@ -131,6 +133,23 @@ case class IfExpression(token: Token, condition: Expression, consequence: BlockS
       buf ++= "else"
       buf ++= alternative.toString
     }
+
+    buf.toString
+  }
+}
+
+case class FunctionLiteral(token: Token, parameters: List[Identifier], body: BlockStatement) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = {
+    val buf = new StringBuilder
+
+    val params = parameters.foldLeft("") { _ + ", " + _.toString }
+
+    buf ++= token.literal
+    buf += '('
+    buf ++= params
+    buf += ')'
+    buf ++= body.toString
 
     buf.toString
   }

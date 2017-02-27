@@ -49,6 +49,7 @@ class Parser(l: Lexer) {
   registerPrefix(token.FALSE, parseBooleanLiteral)
   registerPrefix(token.LPAREN, parseGroupedExpression)
   registerPrefix(token.IF, parseIfExpression)
+  registerPrefix(token.FUNCTION, parseFunctionLiteral)
   //
   registerInfix(token.PLUS, parseInfixExpression)
   registerInfix(token.MINUS, parseInfixExpression)
@@ -224,9 +225,52 @@ class Parser(l: Lexer) {
     }
   }
 
-  private def parseBlockStatement(): BlockStatement = {
+  private def parseFunctionLiteral(): Expression = {
     val current = curToken
-    var statements = scala.collection.mutable.ListBuffer[Statement]()
+    if (!expectPeek(token.LPAREN)) {
+      null
+    } else {
+      val parameters = parseFunctionParameters()
+      if (!expectPeek(token.LBRACE)) {
+        return null
+      } else {
+        val body = parseBlockStatement()
+        FunctionLiteral(current, parameters, body)
+      }
+    }
+  }
+
+  private def parseFunctionParameters(): List[Identifier] = {
+    import scala.collection.mutable.ListBuffer
+    val identifiers = ListBuffer[Identifier]()
+
+    if (peekTokenIs(token.RPAREN)) {
+      nextToken()
+      return identifiers.toList
+    }
+
+    nextToken()
+
+    identifiers += Identifier(curToken, curToken.literal)
+
+    while (peekTokenIs(token.COMMA)) {
+      nextToken()
+      nextToken()
+      identifiers += Identifier(curToken, curToken.literal)
+    }
+
+    if (!expectPeek(token.RPAREN)) {
+      return null
+    }
+
+    identifiers.toList
+  }
+
+  private def parseBlockStatement(): BlockStatement = {
+    import scala.collection.mutable.ListBuffer
+
+    val current = curToken
+    var statements = ListBuffer[Statement]()
 
     nextToken()
 
