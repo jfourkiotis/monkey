@@ -21,7 +21,8 @@ class Parser(l: Lexer) {
     token.PLUS -> Precedence.SUM,
     token.MINUS -> Precedence.SUM,
     token.SLASH -> Precedence.PRODUCT,
-    token.ASTERISK -> Precedence.PRODUCT
+    token.ASTERISK -> Precedence.PRODUCT,
+    token.LPAREN -> Precedence.CALL
   )
 
   type PrefixParseFn = () => Expression
@@ -59,6 +60,7 @@ class Parser(l: Lexer) {
   registerInfix(token.NOT_EQ, parseInfixExpression)
   registerInfix(token.LT, parseInfixExpression)
   registerInfix(token.GT, parseInfixExpression)
+  registerInfix(token.LPAREN, parseCallExpression)
   
 
   private def nextToken() {
@@ -182,6 +184,37 @@ class Parser(l: Lexer) {
     nextToken()
     val right = parseExpression(precedence)
     InfixExpression(curToken, left, operator, right)
+  }
+
+  private def parseCallExpression(func: Expression) = {
+    val current = curToken
+    val arguments = parseCallArguments()
+    CallExpression(current, func, arguments)
+  }
+
+  private def parseCallArguments(): List[Expression] = {
+    import scala.collection.mutable.ListBuffer
+
+    val args = ListBuffer[Expression]()
+
+    if (peekTokenIs(token.RPAREN)) {
+      nextToken()
+      args.toList
+    } else
+    {
+      nextToken()
+      args += parseExpression(Precedence.LOWEST)
+      while (peekTokenIs(token.COMMA)) {
+        nextToken()
+        nextToken()
+        args += parseExpression(Precedence.LOWEST)
+      }
+      if (!expectPeek(token.RPAREN)) {
+        null
+      } else {
+        args.toList
+      }
+    }
   }
 
   private def parseIntegerLiteral(): IntegerLiteral = 

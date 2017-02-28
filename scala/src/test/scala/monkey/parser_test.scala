@@ -175,7 +175,10 @@ class ParserSpec extends FlatSpec with Matchers {
       ("(5 + 5) * 2", "((5 + 5) * 2)"),
       ("2 / (5 + 5)", "(2 / (5 + 5))"),
       ("-(5 + 5)", "(-(5 + 5))"),
-      ("!(true == true)", "(!(true == true))")
+      ("!(true == true)", "(!(true == true))"),
+      ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
+      ("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+      ("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))")
     )
 
    tests.foreach( tt => {
@@ -270,6 +273,27 @@ class ParserSpec extends FlatSpec with Matchers {
         testLiteralExpression(t._1, t._2)
       }
     }
+  }
+
+  "A Parser" should "parse CALL expressions" in {
+    val input = "add(1, 2 * 3, 4 + 5)"
+    val lexer = new Lexer(input)
+    val parser = new Parser(lexer)
+    val program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    program should not be (null)
+    program.statements.length should be (1)
+
+    program.statements.head shouldBe a [ExpressionStatement]
+    val expressionStmt = program.statements.head.asInstanceOf[ExpressionStatement]
+    expressionStmt.expression shouldBe a [CallExpression]
+    val callExpression = expressionStmt.expression.asInstanceOf[CallExpression]
+    testIdentifier(callExpression.func, "add")
+    callExpression.arguments.length should be (3)
+    testLiteralExpression(callExpression.arguments.head, 1)
+    testInfixExpression(callExpression.arguments.tail.head, 2, "*", 3)
+    testInfixExpression(callExpression.arguments.tail.tail.head, 4, "+", 5)
   }
 
   def testLetStatement(stmt: Statement, name: String): Boolean = {

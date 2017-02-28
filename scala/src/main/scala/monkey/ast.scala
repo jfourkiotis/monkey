@@ -143,13 +143,28 @@ case class FunctionLiteral(token: Token, parameters: List[Identifier], body: Blo
   override lazy val toString = {
     val buf = new StringBuilder
 
-    val params = parameters.foldLeft("") { _ + ", " + _.toString }
+    val params = parameters.map(_.toString).mkString(", ")
 
     buf ++= token.literal
     buf += '('
     buf ++= params
     buf += ')'
     buf ++= body.toString
+
+    buf.toString
+  }
+}
+
+case class CallExpression(token: Token, func: Expression, arguments: List[Expression]) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = {
+    val buf = new StringBuilder
+
+    val args = arguments.map(_.toString).mkString(", ")
+    buf ++= func.toString
+    buf += '('
+    buf ++= args
+    buf += ')'
 
     buf.toString
   }
