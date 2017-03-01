@@ -4,6 +4,20 @@ import java.io.{PrintStream, InputStream}
 
 object repl {
   final val PROMPT = ">> "
+  final val MONKEY_FACE = """
+            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-*******-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+  """
+
   def Start(in: InputStream, out: PrintStream) {
     import token._
     val scanner = new java.util.Scanner(in)
@@ -14,19 +28,27 @@ object repl {
         val scanned = scanner.nextLine()
 
         val l = new Lexer(scanned)
-        var tok: Token = null
-        var done = false
-        while (!done) {
-          tok = l.nextToken()
-          if (tok.ttype == EOF) {
-            done = true
-          } else {
-            out.println(tok)
-          }
+        val p = new Parser(l)
+        val program = p.parseProgram()
+
+        val errors = p.errors()
+        if (!errors.isEmpty) {
+          printParserErrors(out, errors)
+        } else {
+          out.println(program.toString)
         }
+
       } catch {
         case e: java.util.NoSuchElementException => println("Goodbye...\n"); return
       }
+    }
+  }
+  def printParserErrors(out: PrintStream, errors: List[String]) = {
+    out.print(MONKEY_FACE)
+    out.println("Woops! We ran into some monkey business here!")
+    out.println(" parser errors:")
+    for (msg <- errors) {
+      out.println(f"\t${msg}")
     }
   }
 }

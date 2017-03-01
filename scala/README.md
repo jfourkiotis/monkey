@@ -13,3 +13,4 @@
 * v0.2.8c The parser can handle IF statements
 * v0.2.8d The parser can handle FN literals
 * v0.2.8e The parser can handle call expressions
+* v0.2.9  The parser is ready

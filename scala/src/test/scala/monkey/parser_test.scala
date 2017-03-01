@@ -4,24 +4,27 @@ import org.scalatest._
 class ParserSpec extends FlatSpec with Matchers {
   
   "A Parser" should "parse the LET statement" in {
-    val input = """
-    let x = 5;
-    let y = 10;
-    let foobar = 838383;
-    """
+    case class TestCase(input: String, expectedIdentifier: String, expectedValue: Any)
 
-    val lexer = new Lexer(input)
-    val parser = new Parser(lexer)
-    
-    val program = parser.parseProgram()
-    checkParserErrors(parser)
-    
-    program should not be (null)
-    program.statements.size should be (3)
+    val tests = List(
+      TestCase(input = "let x = 5;", expectedIdentifier = "x", expectedValue = 5),
+      TestCase(input = "let y = true;", expectedIdentifier = "y", expectedValue = true),
+      TestCase(input = "let foobar = y", expectedIdentifier = "foobar", expectedValue = "y")
+    )
 
-    val tests = List("x", "y", "foobar")
-    tests.zip(program.statements).foreach {
-      case (str, stmt)  => testLetStatement(stmt, str) should be (true)
+    for (tt <- tests) {
+      val lexer = new Lexer(tt.input)
+      val parser = new Parser(lexer)
+      val program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      program should not be null
+      program.statements.length should be (1)
+      testLetStatement(program.statements.head, tt.expectedIdentifier)
+
+      program.statements.head shouldBe a [LetStatement]
+      val letStmt = program.statements.head.asInstanceOf[LetStatement]
+      testLiteralExpression(letStmt.value, tt.expectedValue)
     }
   }
 

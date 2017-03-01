@@ -106,15 +106,15 @@ class Parser(l: Lexer) {
       stmt = stmt.copy(name = Identifier(curToken, curToken.literal))
 
       if (!expectPeek(token.ASSIGN)) {
-        return null
+        null
       } else {
-        // TODO: we're skipping the expressions until we encounter
-        // a semicolon
-        while (!curTokenIs(token.SEMICOLON)) {
+        nextToken()
+        val letValue = parseExpression(Precedence.LOWEST)
+        if (peekTokenIs(token.SEMICOLON)) {
           nextToken()
         }
+        stmt.copy(value = letValue)
       }
-      stmt
     }
   }
 
@@ -123,11 +123,12 @@ class Parser(l: Lexer) {
 
     nextToken()
 
-    while (!curTokenIs(token.SEMICOLON)) {
+    val retValue = parseExpression(Precedence.LOWEST)
+    if (peekTokenIs(token.SEMICOLON)) {
       nextToken()
     }
 
-    stmt
+    stmt.copy(value = retValue)
   }
 
   private def parseExpressionStatement(): ExpressionStatement = {
