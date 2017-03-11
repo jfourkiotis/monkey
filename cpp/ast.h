@@ -41,7 +41,7 @@ public:
 
     Statements::size_type size() const { return statements_.size(); }
 
-    Statement* operator[](size_t index) {
+    const Statement* operator[](size_t index) const {
         return statements_[index].get();
     }
 private:
@@ -216,6 +216,75 @@ private:
     token::Token token_;
     bool value_;
 };//~ Boolean
+
+class BlockStatement : public Statement {
+public:
+    using Statements = std::vector<std::unique_ptr<Statement>>;
+    BlockStatement(token::Token tok, Statements statements)
+        : token_(tok), statements_(std::move(statements)) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override { 
+        std::string buf;
+        
+        for(auto& stmt : statements_) {
+            buf.append(stmt->ToString());
+        }
+
+        return buf;
+    }
+
+    Statements::size_type size() const { return statements_.size(); }
+
+    const Statement* operator[](size_t index) const {
+        return statements_[index].get();
+    }
+private:
+    token::Token token_;
+    Statements statements_;
+};
+
+class IfExpression : public Expression {
+public:
+    IfExpression(token::Token tok, std::unique_ptr<Expression> condition, std::unique_ptr<BlockStatement> consequence, std::unique_ptr<BlockStatement> alternative)
+        : token_(tok), condition_(std::move(condition)), consequence_(std::move(consequence)), alternative_(std::move(alternative)) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override {
+        std::string buf;
+
+        buf.append("if");
+        buf.append(condition_->ToString());
+        buf.append(1, ' ');
+        buf.append(consequence_->ToString());
+
+        if (alternative_) {
+            buf.append("else ");
+            buf.append(alternative_->ToString());
+        }
+        return buf;
+    }
+
+    const Expression* Condition() const {
+        return condition_.get();
+    }
+
+    const BlockStatement* Consequence() const { 
+        return consequence_.get();
+    }
+
+    const BlockStatement* Alternative() const {
+        return alternative_.get();
+    }
+
+private:
+    token::Token token_;
+    std::unique_ptr<Expression> condition_;
+    std::unique_ptr<BlockStatement> consequence_;
+    std::unique_ptr<BlockStatement> alternative_;
+};//~ IfExpression
 
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED

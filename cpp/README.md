@@ -10,3 +10,4 @@
 * v0.2.6d The parser can handle infix operators
 * v0.2.8a The parser can handle boolean literals
 * v0.2.8b The parser can handle grouped expressions
+* v0.2.8c The parser can handle if expressions 

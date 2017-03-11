@@ -65,6 +65,9 @@ public:
         registerPrefix(LPAREN, [this] {
             return parseGroupedExpression();
         });
+        registerPrefix(IF, [this] {
+            return parseIfExpression();
+        });
         registerInfix(PLUS, [this] (auto left) {
             return parseInfixExpression(std::move(left));
         });
@@ -232,6 +235,55 @@ private:
         }
 
         return exp;
+    }
+
+    std::unique_ptr<ast::Expression> parseIfExpression() {
+        auto current = curToken_; // if
+
+        if (!expectPeek(token::LPAREN)) {
+            return nullptr;
+        }
+
+        nextToken();
+        auto condition = parseExpression(LOWEST);
+
+        if (!expectPeek(token::RPAREN)) {
+            return nullptr;
+        }
+
+        if (!expectPeek(token::LBRACE)) {
+            return nullptr;
+        }
+
+        auto consequence = parseBlockStatement();
+
+        decltype(consequence) alternative = nullptr;
+        if (peekTokenIs(token::ELSE)) {
+            nextToken();
+
+            if (!expectPeek(token::LBRACE)) {
+                return nullptr;
+            }
+
+            alternative = parseBlockStatement();
+        }
+           
+        return std::make_unique<ast::IfExpression>(current, std::move(condition), std::move(consequence), std::move(alternative));
+    }
+
+    std::unique_ptr<ast::BlockStatement> parseBlockStatement() {
+        auto current = curToken_;
+        ast::BlockStatement::Statements statements;
+
+        nextToken();
+        while (!curTokenIs(token::RBRACE)) {
+            auto stmt = parseStatement();
+            if (stmt) {
+                statements.push_back(std::move(stmt));
+            }
+            nextToken();
+        }
+        return std::make_unique<ast::BlockStatement>(current, std::move(statements));
     }
 
     std::unique_ptr<ast::Expression> parseIntegerLiteral() {

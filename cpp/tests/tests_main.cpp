@@ -166,7 +166,7 @@ TEST_CASE("LetStatement", "[Parsing,LetStatement]") {
     auto testLetStatement = [](auto stmt, auto str) -> bool {
         REQUIRE(stmt->TokenLiteral() == "let");
 
-        auto *letStmt = dynamic_cast<ast::LetStatement *>(stmt);
+        auto letStmt = dynamic_cast<const ast::LetStatement *>(stmt);
         REQUIRE(letStmt != nullptr);
         REQUIRE(letStmt->Name()->Value() == str);
         REQUIRE(letStmt->Name()->TokenLiteral() == str);
@@ -199,7 +199,7 @@ TEST_CASE("ReturnStatement", "[Parsing,ReturnStatement]") {
         REQUIRE(program->size() == 3);
 
         for (auto i = 0; i != program->size(); ++i) {
-            auto stmt = dynamic_cast<ast::ReturnStatement *>((*program)[i]);
+            auto stmt = dynamic_cast<const ast::ReturnStatement *>((*program)[i]);
             REQUIRE(stmt);
             REQUIRE(stmt->TokenLiteral() == "return");
         }
@@ -236,7 +236,7 @@ TEST_CASE("IdentifierExpression", "[Parsing]") {
 
     REQUIRE(program->size() == 1);
 
-    auto stmt = dynamic_cast<ast::ExpressionStatement*>((*program)[0]);
+    auto stmt = dynamic_cast<const ast::ExpressionStatement*>((*program)[0]);
     REQUIRE(stmt);
 
     auto id = dynamic_cast<const ast::Identifier*>(stmt->BorrowedExpression());
@@ -306,7 +306,7 @@ TEST_CASE("IntegerLiteralExpression", "[Parsing]") {
 
     REQUIRE(program->size() == 1);
 
-    auto stmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+    auto stmt = dynamic_cast<const ast::ExpressionStatement *>((*program)[0]);
     REQUIRE(stmt);
 
     auto integer = dynamic_cast<const ast::IntegerLiteral *>(stmt->BorrowedExpression());
@@ -325,7 +325,7 @@ void TestPrefixCore(const std::string& input, const std::string& op, T val)
 
     REQUIRE(program->size() == 1);
     auto expressionStmt = 
-        dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+        dynamic_cast<const ast::ExpressionStatement *>((*program)[0]);
     REQUIRE(expressionStmt);
     auto prefixExpression = 
         dynamic_cast<const ast::PrefixExpression *>((expressionStmt->BorrowedExpression()));
@@ -374,7 +374,7 @@ void TestInfixCore(const std::string& input, T left, const std::string &op, T ri
     checkParserErrors(p);
 
     REQUIRE(program->size() == 1);
-    auto expressionStmt = dynamic_cast<ast::ExpressionStatement *>((*program)[0]);
+    auto expressionStmt = dynamic_cast<const ast::ExpressionStatement *>((*program)[0]);
     REQUIRE(expressionStmt);
     auto infixExpression =
         dynamic_cast<const ast::InfixExpression *>((expressionStmt->BorrowedExpression()));
@@ -461,4 +461,39 @@ TEST_CASE("OperatorPrecedence", "[Parsing]") {
         auto actual = program->ToString();
         REQUIRE(actual == test.expected);
     }
+}
+
+TEST_CASE("IfExpression", "[Parsing]") {
+    using std::string;
+
+    std::string input{"if (x < y) { x } else { y }"};
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+    checkParserErrors(p);
+
+    REQUIRE(program);
+    REQUIRE(program->size() == 1);
+    auto expressionStmt = 
+        dynamic_cast<const ast::ExpressionStatement *>((*program)[0]);
+    REQUIRE(expressionStmt);
+    auto ifExpression = 
+        dynamic_cast<const ast::IfExpression *>(expressionStmt->BorrowedExpression());
+    REQUIRE(ifExpression);
+    testInfixExpression(ifExpression->Condition(), "x", "<", "y");
+    auto consequence_block = ifExpression->Consequence();
+    REQUIRE(consequence_block->size() == 1);
+
+    auto expressionStmt2 = 
+        dynamic_cast<const ast::ExpressionStatement *>((*consequence_block)[0]);
+    REQUIRE(expressionStmt2);
+    testIdentifier(expressionStmt2->BorrowedExpression(), "x");
+
+    auto alternative_block = ifExpression->Alternative();
+    REQUIRE(alternative_block->size() == 1);
+    auto expressionStmt3 = 
+        dynamic_cast<const ast::ExpressionStatement *>((*alternative_block)[0]);
+    REQUIRE(expressionStmt3);
+    testIdentifier(expressionStmt3->BorrowedExpression(), "y");
+
 }
