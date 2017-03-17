@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <numeric>
 #include <initializer_list>
 #include <cstdint>
 
@@ -285,6 +286,43 @@ private:
     std::unique_ptr<BlockStatement> consequence_;
     std::unique_ptr<BlockStatement> alternative_;
 };//~ IfExpression
+
+class CallExpression : public Expression {
+public:
+    using ArgumentList = std::vector<std::unique_ptr<Expression>>;
+    CallExpression(token::Token tok, std::unique_ptr<Expression> function, ArgumentList arguments)
+        : token_(tok), function_(std::move(function)), arguments_(std::move(arguments)) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override {
+        std::string buf;
+        
+        auto args = std::accumulate(
+                arguments_.begin(), 
+                arguments_.end(), 
+                std::string(), 
+                [](const auto &accum, const auto &rhs) {
+                    if (accum.empty()) return rhs->ToString(); 
+                    return accum + ", " + rhs->ToString();
+                });
+
+        buf.append(function_->ToString());
+        buf.append(1, '(');
+        buf.append(args);
+        buf.append(1, ')');
+
+        return buf;
+    }
+
+    const Expression* Function() const { return function_.get(); }
+    const ArgumentList& Arguments() const { return arguments_; }
+
+private:
+    token::Token token_;
+    std::unique_ptr<Expression> function_;
+    ArgumentList arguments_;
+};//~ CallExpression
 
 }//~ ast
 #endif // MONKEY_AST_H_INCLUDED

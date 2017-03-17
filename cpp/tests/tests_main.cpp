@@ -450,6 +450,9 @@ TEST_CASE("OperatorPrecedence", "[Parsing]") {
         { "2 / (5 + 5)", "(2 / (5 + 5))" },
         { "-(5 + 5)", "(-(5 + 5))" },
         { "!(true == true)", "(!(true == true))" },
+        { "a + add(b * c) + d", "((a + add((b * c))) + d)" },
+        { "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+        { "add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))" },
     };
 
     for(const auto& test : tests) {
@@ -496,4 +499,31 @@ TEST_CASE("IfExpression", "[Parsing]") {
     REQUIRE(expressionStmt3);
     testIdentifier(expressionStmt3->BorrowedExpression(), "y");
 
+}
+
+TEST_CASE("CallExpression", "[Parsing]") {
+    using std::string;
+
+    std::string input{"add(1, 2 * 3, 4 + 5);"};
+
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+    checkParserErrors(p);
+
+    REQUIRE(program);
+    REQUIRE(program->size() == 1);
+    auto expressionStmt = 
+        dynamic_cast<const ast::ExpressionStatement *>((*program)[0]);
+    REQUIRE(expressionStmt);
+    auto callExpression = 
+        dynamic_cast<const ast::CallExpression *>(expressionStmt->BorrowedExpression());
+    REQUIRE(callExpression);
+    testIdentifier(callExpression->Function(), "add");
+
+    const auto& args = callExpression->Arguments();
+    REQUIRE(args.size() == 3);
+    testLiteralExpression(args[0].get(), static_cast<int64_t>(1));
+    testInfixExpression(args[1].get(), 2, "*", 3);
+    testInfixExpression(args[2].get(), 4, "+", 5);
 }

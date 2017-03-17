@@ -32,6 +32,7 @@ const std::unordered_map<token::TokenType, int> precedences = {
     { token::MINUS, SUM },
     { token::SLASH, PRODUCT },
     { token::ASTERISK, PRODUCT },
+    { token::LPAREN, CALL },
 };
 
 using PrefixParseFn = std::function<std::unique_ptr<ast::Expression>()>;
@@ -92,7 +93,9 @@ public:
         registerInfix(GT, [this] (auto left) {
             return parseInfixExpression(std::move(left));
         });
-
+        registerInfix(LPAREN, [this] (auto left) {
+            return parseCallExpression(std::move(left));
+        });
     }
 
     std::unique_ptr<ast::Program> ParseProgram() {
@@ -319,6 +322,41 @@ private:
         auto right = parseExpression(precedence);
 
         return std::make_unique<ast::InfixExpression>(token, std::move(left), op, std::move(right));
+    }
+
+    std::unique_ptr<ast::Expression> parseCallExpression(std::unique_ptr<ast::Expression> func) {
+        auto token = curToken_;
+
+        int err = 0;
+        auto args = parseCallArguments(&err); // not the prettiest API call
+        if (err) return nullptr;
+
+        return std::make_unique<ast::CallExpression>(token, std::move(func), std::move(args));
+    }
+
+    ast::CallExpression::ArgumentList parseCallArguments(int *err) {
+        ast::CallExpression::ArgumentList args;
+
+        if (peekTokenIs(token::RPAREN)) {
+            nextToken();
+            return args;
+        }
+
+        nextToken(); 
+        args.emplace_back(parseExpression(LOWEST));
+
+        while (peekTokenIs(token::COMMA)) {
+            nextToken();
+            nextToken();
+            args.emplace_back(parseExpression(LOWEST));
+        }
+
+        if (!expectPeek(token::RPAREN)) {
+            *err = 1;
+            return {}; // empty
+        }
+
+        return args;
     }
 
     bool curTokenIs(token::TokenType type) const {
