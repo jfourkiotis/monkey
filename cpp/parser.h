@@ -169,26 +169,27 @@ private:
             return nullptr;
         }
 
-        // TODO: we're skipping the expressions until we encounter
-        // a semicolon
-        while (!curTokenIs(token::SEMICOLON)) {
+        nextToken();
+        auto value = parseExpression(LOWEST);
+        
+        if (peekTokenIs(token::SEMICOLON)) {
             nextToken();
         }
 
-        return make_unique<ast::LetStatement>(let_token, move(identifier), nullptr);
+        return make_unique<ast::LetStatement>(let_token, move(identifier), move(value));
     }
 
     std::unique_ptr<ast::Statement> parseReturnStatement() {
         auto return_token = curToken_;
         nextToken();
 
-        // TODO: we're skipping the expressions until we encounter
-        // a semicolon
+        auto retval = parseExpression(LOWEST);
+
         while (!curTokenIs(token::SEMICOLON)) {
             nextToken();
         }
 
-        return std::make_unique<ast::ReturnStatement>(return_token, nullptr);
+        return std::make_unique<ast::ReturnStatement>(return_token, std::move(retval));
     }
 
     std::unique_ptr<ast::ExpressionStatement> parseExpressionStatement() {
