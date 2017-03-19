@@ -50,7 +50,7 @@ private:
 };//~ Program
 
 // To hold the identifier of a Let statement, we use the Identifier class
-class Identifier : public Expression {
+class Identifier final: public Expression {
 public:
     Identifier(token::Token token, const std::string& value) : token_(token), value_(value) {}
     std::string TokenLiteral() const override { return token_.literal; }
@@ -63,7 +63,7 @@ private:
 
 // The let statement holds the name of the binding and the value of the 
 // expression
-class LetStatement : public Statement {
+class LetStatement final: public Statement {
 public:
     LetStatement(token::Token token, std::unique_ptr<Identifier> name, std::unique_ptr<Expression> expr)
         : token_(token), name_(std::move(name)), expression_(std::move(expr)) {}
@@ -92,7 +92,7 @@ private:
     std::unique_ptr<Expression> expression_;
 };//~ LetStatement
 
-class ReturnStatement : public Statement {
+class ReturnStatement final: public Statement {
 public:
     ReturnStatement(token::Token token, std::unique_ptr<Expression> expression)
         : token_(token), expression_(std::move(expression)) {}
@@ -116,7 +116,7 @@ private:
     std::unique_ptr<Expression> expression_;
 };//~ ReturnStatement
 
-class ExpressionStatement : public Statement {
+class ExpressionStatement final: public Statement {
 public:
     ExpressionStatement(token::Token token, std::unique_ptr<Expression> expression)
         : token_(token), expression_(std::move(expression)) {}
@@ -131,7 +131,7 @@ private:
     std::unique_ptr<Expression> expression_;
 };//~ ExpressionStatement
 
-class IntegerLiteral : public Expression {
+class IntegerLiteral final: public Expression {
 public:
     IntegerLiteral(token::Token token, int64_t value) : token_(token), value_(value) {}
 
@@ -145,7 +145,7 @@ private:
     int64_t value_;
 };//~ IntegerLiteral
 
-class PrefixExpression : public Expression {
+class PrefixExpression final: public Expression {
 public:
     PrefixExpression(token::Token tok, const std::string& op, std::unique_ptr<Expression> right)
         : token_(tok), op_(op), right_(std::move(right)) {}
@@ -172,7 +172,7 @@ private:
     std::unique_ptr<Expression> right_;
 };//~ PrefixExpression
 
-class InfixExpression : public Expression {
+class InfixExpression final: public Expression {
 public:
     InfixExpression(token::Token tok, std::unique_ptr<Expression> left, const std::string& op, std::unique_ptr<Expression> right)
         : token_(tok), left_(std::move(left)), op_(op), right_(std::move(right)) {}
@@ -204,7 +204,7 @@ private:
     std::unique_ptr<Expression> right_;
 };//~ InfixExpression
 
-class BooleanLiteral : public Expression {
+class BooleanLiteral final: public Expression {
 public:
     BooleanLiteral(token::Token tok, bool val) : token_(tok), value_(val) {}
 
@@ -218,7 +218,7 @@ private:
     bool value_;
 };//~ Boolean
 
-class BlockStatement : public Statement {
+class BlockStatement final: public Statement {
 public:
     using Statements = std::vector<std::unique_ptr<Statement>>;
     BlockStatement(token::Token tok, Statements statements)
@@ -246,7 +246,7 @@ private:
     Statements statements_;
 };
 
-class IfExpression : public Expression {
+class IfExpression final: public Expression {
 public:
     IfExpression(token::Token tok, std::unique_ptr<Expression> condition, std::unique_ptr<BlockStatement> consequence, std::unique_ptr<BlockStatement> alternative)
         : token_(tok), condition_(std::move(condition)), consequence_(std::move(consequence)), alternative_(std::move(alternative)) {}
@@ -287,7 +287,7 @@ private:
     std::unique_ptr<BlockStatement> alternative_;
 };//~ IfExpression
 
-class CallExpression : public Expression {
+class CallExpression final: public Expression {
 public:
     using ArgumentList = std::vector<std::unique_ptr<Expression>>;
     CallExpression(token::Token tok, std::unique_ptr<Expression> function, ArgumentList arguments)
