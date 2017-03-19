@@ -6,7 +6,7 @@
 #include "token.h"
 
 namespace lexer {
-class Lexer {
+class Lexer final {
 public:
     explicit Lexer(const std::string& inp)
         : input(inp), position(0), read_position(0), ch(0) { 

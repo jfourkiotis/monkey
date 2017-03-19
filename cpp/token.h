@@ -40,7 +40,7 @@ const TokenType IF        = "IF";
 const TokenType ELSE      = "ELSE";
 const TokenType RETURN    = "RETURN";
 
-struct Token {
+struct Token final {
     Token() : type(ILLEGAL), literal("") {}
     Token(TokenType t, char c) : type(t), literal(1, c) {}
     Token(TokenType t, const std::string& s) : type(t), literal(s) {}
