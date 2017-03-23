@@ -12,3 +12,4 @@
 * v0.2.8b The parser can handle grouped expressions
 * v0.2.8c The parser can handle if expressions 
 * v0.2.8d The parser can handle call expressions and literals
+* v0.2.8e The parser can handle function literals

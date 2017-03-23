@@ -69,6 +69,9 @@ public:
         registerPrefix(IF, [this] {
             return parseIfExpression();
         });
+        registerPrefix(FUNCTION, [this] {
+            return parseFunctionLiteral();
+        });
         registerInfix(PLUS, [this] (auto left) {
             return parseInfixExpression(std::move(left));
         });
@@ -273,6 +276,49 @@ private:
         }
            
         return std::make_unique<ast::IfExpression>(current, std::move(condition), std::move(consequence), std::move(alternative));
+    }
+
+    std::unique_ptr<ast::Expression> parseFunctionLiteral() {
+        auto current = curToken_; // fn
+        
+        if (!expectPeek(token::LPAREN)) {
+            return nullptr;
+        }
+
+        int error = 0;
+        auto params = parseFunctionParameters(&error);
+
+        if (error || !expectPeek(token::LBRACE)) {
+            return nullptr;
+        }
+
+        auto body = parseBlockStatement();
+        return std::make_unique<ast::FunctionLiteral>(current, std::move(params), std::move(body));
+    }
+
+    ast::FunctionLiteral::ParameterList parseFunctionParameters(int *error) {
+        ast::FunctionLiteral::ParameterList params;
+
+        if (peekTokenIs(token::RPAREN)) {
+            nextToken();
+            return params;
+        }
+
+        nextToken();
+        params.emplace_back(std::make_unique<ast::Identifier>(curToken_, curToken_.literal));
+
+        while (peekTokenIs(token::COMMA)) {
+            nextToken();
+            nextToken();
+            params.emplace_back(std::make_unique<ast::Identifier>(curToken_, curToken_.literal));
+        }
+
+        if (!expectPeek(token::RPAREN)) {
+            *error = 1;
+            return {};
+        }
+
+        return params;
     }
 
     std::unique_ptr<ast::BlockStatement> parseBlockStatement() {

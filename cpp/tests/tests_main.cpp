@@ -501,6 +501,70 @@ TEST_CASE("IfExpression", "[Parsing]") {
 
 }
 
+TEST_CASE("FunctionParameters", "[Parsing]") {
+    using std::string;
+    using std::vector;
+
+    struct {
+        string input;
+        vector<string> expectedParams;
+    } tests[] = {
+        { "fn() {};", {} },
+        { "fn(x) {};", {"x"} },
+        { "fn(x, y, z) {};", {"x", "y", "z"}}
+    };
+
+    for (const auto& tt : tests) {
+        lexer::Lexer l{tt.input};
+        Parser p{l};
+        auto program = p.ParseProgram();
+        checkParserErrors(p);
+
+        auto stmt = 
+            dynamic_cast<const ast::ExpressionStatement *>((*program)[0]);
+        REQUIRE(stmt);
+        auto function = 
+            dynamic_cast<const ast::FunctionLiteral *>(stmt->BorrowedExpression());
+        REQUIRE(function);
+        REQUIRE(function->Parameters().size() == tt.expectedParams.size());
+
+        int i = 0;
+        for (const auto &ep : tt.expectedParams) {
+            testLiteralExpression(function->Parameters()[i].get(), ep);
+            ++i;
+        }
+    }
+}
+
+TEST_CASE("FunctionLiteral", "[Parsing]") {
+    using std::string;
+
+    std::string input{"fn(x,y) {x + y;}"};
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+
+    REQUIRE(program);
+    REQUIRE(program->size() == 1);
+    auto expressionStmt = 
+        dynamic_cast<const ast::ExpressionStatement *>((*program)[0]);
+    REQUIRE(expressionStmt);
+    auto function = 
+        dynamic_cast<const ast::FunctionLiteral *>(expressionStmt->BorrowedExpression());
+
+    const auto& params = function->Parameters();
+    REQUIRE(params.size() == 2);
+
+    testLiteralExpression(params[0].get(), string("x"));
+    testLiteralExpression(params[1].get(), string("y"));
+
+    auto body = function->Body();
+    REQUIRE(body->size() == 1);
+    auto bodyStmt = dynamic_cast<const ast::ExpressionStatement *>((*body)[0]);
+    REQUIRE(bodyStmt);
+    testInfixExpression(bodyStmt->BorrowedExpression(), "x", "+", "y");
+}
+
 TEST_CASE("CallExpression", "[Parsing]") {
     using std::string;
 

@@ -287,6 +287,43 @@ private:
     std::unique_ptr<BlockStatement> alternative_;
 };//~ IfExpression
 
+class FunctionLiteral final: public Expression {
+public:
+    using ParameterList = std::vector<std::unique_ptr<Identifier>>;
+    FunctionLiteral(token::Token tok, ParameterList params, std::unique_ptr<BlockStatement> body)
+        : token_(tok), parameters_(std::move(params)), body_(std::move(body)) {}
+
+    std::string TokenLiteral() const override { return token_.literal; }
+
+    std::string ToString() const override {
+        std::string buf;
+
+        auto params = std::accumulate(
+                parameters_.begin(),
+                parameters_.end(),
+                std::string(),
+                [](const auto &accum, const auto &rhs) {
+                    if (accum.empty()) return rhs->ToString();
+                    return accum + ", " + rhs->ToString();
+                });
+
+        buf.append(TokenLiteral());
+        buf.append(1, '(');
+        buf.append(params);
+        buf.append(1, ')');
+        buf.append(body_->ToString());
+
+        return buf;
+    }
+
+    const ParameterList& Parameters() const { return parameters_; }
+    const BlockStatement* Body() const { return body_.get(); }
+private:
+    token::Token token_;
+    ParameterList parameters_;
+    std::unique_ptr<BlockStatement> body_;
+};//~ FunctionLiteral
+
 class CallExpression final: public Expression {
 public:
     using ArgumentList = std::vector<std::unique_ptr<Expression>>;
