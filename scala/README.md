@@ -14,3 +14,4 @@
 * v0.2.8d The parser can handle FN literals
 * v0.2.8e The parser can handle call expressions
 * v0.2.9  The parser is ready
+* v0.3    The evaluator can handle integer and boolean literals

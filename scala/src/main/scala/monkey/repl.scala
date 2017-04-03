@@ -20,6 +20,8 @@ object repl {
 
   def Start(in: InputStream, out: PrintStream) {
     import token._
+    import evaluator._
+    import objects._
     val scanner = new java.util.Scanner(in)
 
     while (true) {
@@ -35,7 +37,10 @@ object repl {
         if (!errors.isEmpty) {
           printParserErrors(out, errors)
         } else {
-          out.println(program.toString)
+          val evaluated = eval(program)
+          if (evaluated != null) {
+            out.println(evaluated.inspect)
+          }
         }
 
       } catch {
