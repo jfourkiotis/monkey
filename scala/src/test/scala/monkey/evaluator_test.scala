@@ -11,7 +11,17 @@ class EvaluatorTest extends FlatSpec with Matchers {
       TestCase(input = "5", expected = 5),
       TestCase(input = "10", expected = 10),
       TestCase(input = "-5", expected = -5),
-      TestCase(input = "-10", expected = -10)
+      TestCase(input = "-10", expected = -10),
+      TestCase(input = "5 + 5 + 5 + 5 - 10", expected = 10),
+      TestCase(input = "2 * 2 * 2 * 2 *  2", expected = 32),
+      TestCase(input = "-50 + 100 + -50", expected =  0),
+      TestCase(input = "5 * 2 + 10", expected = 20),
+      TestCase(input = "5 + 2 * 10", expected = 25),
+      TestCase(input = "20 + 2 * -10", expected = 0),
+      TestCase(input = "50 / 2 * 2 + 10", expected = 60),
+      TestCase(input = "3 * 3 * 3 + 10", expected = 37),
+      TestCase(input = "3 * (3 * 3) + 10", expected = 37),
+      TestCase(input = "(5 + 10 * 2 + 15 / 3) * 2 + -10", expected = 50)
     )
 
     for (tt <- tests) {

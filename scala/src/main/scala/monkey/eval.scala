@@ -16,6 +16,11 @@ object evaluator {
       val right = eval(pr.right)
       evalPrefixExpression(pr.operator, right)
     }
+    case in: InfixExpression => {
+      val left = eval(in.left)
+      val right = eval(in.right)
+      evalInfixExpression(in.operator, left, right)
+    }
     case _ => null
   }
 
@@ -49,4 +54,27 @@ object evaluator {
       val i = right.asInstanceOf[MInteger]
       MInteger(-i.value)
     }
+
+  private def evalInfixExpression(operator: String, left: MObject, right: MObject) = {
+    if (left.vtype == INTEGER_OBJ && right.vtype == INTEGER_OBJ)
+      evalIntegerInfixExpression(operator, left, right)
+    else 
+      NULL
+  }
+
+  private def evalIntegerInfixExpression(operator: String, left: MObject, right: MObject) = {
+    val leftVal = left.asInstanceOf[MInteger].value
+    val rightVal = right.asInstanceOf[MInteger].value
+
+    if (operator == "+") 
+      MInteger(leftVal + rightVal)
+    else if (operator == "-")
+      MInteger(leftVal - rightVal)
+    else if (operator == "*")
+      MInteger(leftVal * rightVal)
+    else if (operator == "/")
+      MInteger(leftVal / rightVal)
+    else 
+      NULL
+  }
 }
