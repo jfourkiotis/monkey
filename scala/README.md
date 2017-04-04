@@ -15,3 +15,4 @@
 * v0.2.8e The parser can handle call expressions
 * v0.2.9  The parser is ready
 * v0.3    The evaluator can handle integer and boolean literals
+* v0.3.1a The evaluator can handle "!" & "-" unary prefix of integer & boolean literals
