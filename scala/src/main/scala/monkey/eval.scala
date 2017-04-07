@@ -58,7 +58,11 @@ object evaluator {
   private def evalInfixExpression(operator: String, left: MObject, right: MObject) = {
     if (left.vtype == INTEGER_OBJ && right.vtype == INTEGER_OBJ)
       evalIntegerInfixExpression(operator, left, right)
-    else 
+    else if (operator == "==")
+      nativeBoolToBooleanObj(left == right)
+    else if (operator == "!=")
+      nativeBoolToBooleanObj(left != right)
+    else
       NULL
   }
 
@@ -74,7 +78,15 @@ object evaluator {
       MInteger(leftVal * rightVal)
     else if (operator == "/")
       MInteger(leftVal / rightVal)
-    else 
+    else if (operator == "<")
+      nativeBoolToBooleanObj(leftVal < rightVal)
+    else if (operator == ">")
+      nativeBoolToBooleanObj(leftVal > rightVal)
+    else if (operator == "==")
+      nativeBoolToBooleanObj(leftVal == rightVal)
+    else if (operator == "!=")
+      nativeBoolToBooleanObj(leftVal != rightVal)
+    else
       NULL
   }
 }

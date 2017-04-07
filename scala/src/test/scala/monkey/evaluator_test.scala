@@ -30,6 +30,25 @@ class EvaluatorTest extends FlatSpec with Matchers {
     }
   }
 
+  "A comparison operator" should "result in an appropriate Boolean value" in {
+    case class TestCase(input: String, expected: Boolean)
+    val tests = List(
+      TestCase(input = "1 < 2", expected = true),
+      TestCase(input = "1 > 2", expected = false),
+      TestCase(input = "1 < 1", expected = false),
+      TestCase(input = "1 > 1", expected = false),
+      TestCase(input = "1 == 1", expected = true),
+      TestCase(input = "1 != 1", expected = false),
+      TestCase(input = "1 == 2", expected = false),
+      TestCase(input = "1 != 2", expected = true)
+    )
+
+    for (tt <- tests) {
+      val evaluated = testEval(tt.input)
+      testBooleanObject(evaluated, tt.expected)
+    }
+  }
+
   "The ! operator" should "convert its operand to a boolean and negate it" in {
     case class TestCase(input: String, expected: Boolean)
     val tests = List(
@@ -38,7 +57,16 @@ class EvaluatorTest extends FlatSpec with Matchers {
       TestCase(input = "!5"    , expected = false),
       TestCase(input = "!!true", expected = true ),
       TestCase(input = "!!false", expected = false),
-      TestCase(input = "!!5", expected = true)
+      TestCase(input = "!!5", expected = true),
+      TestCase(input = "true == true", expected = true),
+      TestCase(input = "false == false", expected = true),
+      TestCase(input = "true == false", expected = false),
+      TestCase(input = "true != false", expected = true),
+      TestCase(input = "false != true", expected = true),
+      TestCase(input = "(1 < 2) == true", expected = true),
+      TestCase(input = "(1 < 2) == false", expected = false),
+      TestCase(input = "(1 > 2) == true", expected = false),
+      TestCase(input = "(1 > 2) == false", expected = true)
     )
 
     for (tt <- tests) {
