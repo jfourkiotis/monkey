@@ -75,6 +75,32 @@ class EvaluatorTest extends FlatSpec with Matchers {
     }
   }
 
+  "The if/else statement" should "evaluate the conditional and execute the correct branch" in {
+    case class TestCase[T](input: String, expected: T)
+    val tests1 = List(
+      TestCase("if (true) { 10 }", 10),
+      TestCase("if (1) { 10 }", 10),
+      TestCase("if (1 < 2) { 10 }", 10),
+      TestCase("if (1 > 2) { 10 } else { 20 }", 20),
+      TestCase("if (1 < 2) { 10 } else { 20 }", 10)
+    )
+
+    for ( tt <- tests1) {
+      val evaluated = testEval(tt.input)
+      testIntegerObject(evaluated, tt.expected)
+    }
+
+    val tests2 = List(
+      TestCase("if (false) { 10 }", null),
+      TestCase("if (1 > 2) { 10 }", null)
+    )
+
+    for (tt <- tests2) {
+      val evaluated = testEval(tt.input)
+      testNullObject(evaluated)
+    }
+  }
+
   def testEval(input: String) = {
     val l = new Lexer(input)
     val p = new Parser(l)
@@ -93,4 +119,6 @@ class EvaluatorTest extends FlatSpec with Matchers {
     val b = obj.asInstanceOf[MBoolean]
     b.value should be (expected)
   }
+
+  def testNullObject(obj: MObject) = obj should be (NULL)
 }

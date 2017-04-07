@@ -9,6 +9,8 @@ object evaluator {
 
   def eval(node: Node): MObject = node match {
     case p: Program => evalStatements(p.statements)
+    case b: BlockStatement => evalStatements(b.statements)
+    case f: IfExpression => evalIfExpression(f)
     case e: ExpressionStatement => eval(e.expression)
     case i: IntegerLiteral => MInteger(i.value)
     case b: BooleanLiteral => nativeBoolToBooleanObj(b.value)
@@ -22,6 +24,23 @@ object evaluator {
       evalInfixExpression(in.operator, left, right)
     }
     case _ => null
+  }
+
+  private def evalIfExpression(expression: IfExpression) = {
+    def isTruthy(obj: MObject) = 
+      if (obj == NULL) false
+      else if (obj == TRUE) true
+      else if (obj == FALSE) false
+      else true
+
+    val condition = eval(expression.condition)
+    if (isTruthy(condition)) {
+      eval(expression.consequence)
+    } else if (expression.alternative != null) {
+      eval(expression.alternative)
+    } else {
+      NULL
+    }
   }
 
   private def evalStatements(statements: List[Statement]) = {

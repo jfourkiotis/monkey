@@ -253,7 +253,18 @@ class Parser(l: Lexer) {
           null
         } else {
           val consequence = parseBlockStatement()
-          IfExpression(current, condition, consequence, null)
+
+          if (peekTokenIs(token.ELSE)) {
+            nextToken()
+            if (!expectPeek(token.LBRACE)) {
+              null
+            } else {
+              val alternative = parseBlockStatement()
+              IfExpression(current, condition, consequence, alternative)
+            }
+          } else {
+            IfExpression(current, condition, consequence, null)
+          }
         }
       }
     }

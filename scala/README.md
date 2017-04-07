@@ -18,3 +18,4 @@
 * v0.3.1a The evaluator can handle "!" & "-" unary prefix of integer & boolean literals
 * v0.3.2  The evaluator can handle the basic arithmetic operators for integers
 * v0.3.3  The evaluator can handle boolean expressions 
+* v0.3.6  If statement evaluation
