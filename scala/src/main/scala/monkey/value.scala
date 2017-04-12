@@ -11,6 +11,7 @@ object objects {
   val INTEGER_OBJ: ObjectType = "INTEGER"
   val BOOLEAN_OBJ: ObjectType = "BOOLEAN"
   val NULL_OBJ: ObjectType = "NULL"
+  val RETURN_OBJ: ObjectType = "RETURN_VALUE"
 
   case class MInteger(value: Long) extends MObject {
     val vtype = INTEGER_OBJ
@@ -25,5 +26,10 @@ object objects {
   case object MNull extends MObject {
     val vtype = NULL_OBJ
     def inspect = "null"
+  }
+
+  case class MReturn(value: MObject) extends MObject {
+    val vtype = RETURN_OBJ
+    def inspect = value.inspect
   }
 }

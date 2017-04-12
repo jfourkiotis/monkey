@@ -8,12 +8,16 @@ object evaluator {
   val NULL = MNull
 
   def eval(node: Node): MObject = node match {
-    case p: Program => evalStatements(p.statements)
-    case b: BlockStatement => evalStatements(b.statements)
+    case p: Program => evalProgram(p)
+    case b: BlockStatement => evalBlockStatement(b)
     case f: IfExpression => evalIfExpression(f)
     case e: ExpressionStatement => eval(e.expression)
     case i: IntegerLiteral => MInteger(i.value)
     case b: BooleanLiteral => nativeBoolToBooleanObj(b.value)
+    case r: ReturnStatement => {
+      val v = eval(r.value)
+      MReturn(v)
+    }
     case pr: PrefixExpression => {
       val right = eval(pr.right)
       evalPrefixExpression(pr.operator, right)
@@ -43,11 +47,28 @@ object evaluator {
     }
   }
 
-  private def evalStatements(statements: List[Statement]) = {
+  private def evalProgram(p: Program): MObject = {
     var result: MObject = null
 
-    for (stmt <- statements) {
+    for (stmt <- p.statements) {
+      eval(stmt) match {
+        case MReturn(v) => return v
+        case r => result = r
+      }
+    }
+
+    result
+  }
+
+  private def evalBlockStatement(b: BlockStatement): MObject = {
+    var result: MObject = null
+
+    for (stmt <- b.statements) {
       result = eval(stmt)
+
+      if (result != null && result.vtype == RETURN_OBJ) {
+        return result
+      }
     }
 
     result

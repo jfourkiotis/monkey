@@ -101,6 +101,22 @@ class EvaluatorTest extends FlatSpec with Matchers {
     }
   }
 
+  "The return statement" should "stop the evaluation and return its value" in {
+    case class TestCase(input: String, expected: Long)
+    val tests = List(
+      TestCase("return 10;", 10),
+      TestCase("return 10; 9;", 10),
+      TestCase("return 2 * 5; 9;", 10),
+      TestCase("9; return 2 * 5; 9", 10),
+      TestCase("if (10 > 1) { if (10 > 1) { return 10; } return 1; }", 10)
+    )
+
+    for (tt <- tests) {
+      val evaluated = testEval(tt.input)
+      testIntegerObject(evaluated, tt.expected)
+    }
+  }
+
   def testEval(input: String) = {
     val l = new Lexer(input)
     val p = new Parser(l)
