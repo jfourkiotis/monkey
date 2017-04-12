@@ -12,6 +12,7 @@ object objects {
   val BOOLEAN_OBJ: ObjectType = "BOOLEAN"
   val NULL_OBJ: ObjectType = "NULL"
   val RETURN_OBJ: ObjectType = "RETURN_VALUE"
+  val ERROR_OBJ: ObjectType = "ERROR"
 
   case class MInteger(value: Long) extends MObject {
     val vtype = INTEGER_OBJ
@@ -31,5 +32,10 @@ object objects {
   case class MReturn(value: MObject) extends MObject {
     val vtype = RETURN_OBJ
     def inspect = value.inspect
+  }
+
+  case class MError(message: String) extends MObject {
+    val vtype = ERROR_OBJ
+    def inspect = "ERROR: " + message
   }
 }

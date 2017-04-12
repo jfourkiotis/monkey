@@ -16,16 +16,19 @@ object evaluator {
     case b: BooleanLiteral => nativeBoolToBooleanObj(b.value)
     case r: ReturnStatement => {
       val v = eval(r.value)
-      MReturn(v)
+      if (isError(v)) v else MReturn(v)
     }
     case pr: PrefixExpression => {
       val right = eval(pr.right)
-      evalPrefixExpression(pr.operator, right)
+      if (isError(right)) right else evalPrefixExpression(pr.operator, right)
     }
     case in: InfixExpression => {
       val left = eval(in.left)
-      val right = eval(in.right)
-      evalInfixExpression(in.operator, left, right)
+      if (isError(left)) left 
+      else {
+        val right = eval(in.right)
+        if (isError(right)) right else evalInfixExpression(in.operator, left, right)
+      }
     }
     case _ => null
   }
@@ -38,7 +41,8 @@ object evaluator {
       else true
 
     val condition = eval(expression.condition)
-    if (isTruthy(condition)) {
+    if (isError(condition)) condition
+    else if (isTruthy(condition)) {
       eval(expression.consequence)
     } else if (expression.alternative != null) {
       eval(expression.alternative)
@@ -53,6 +57,7 @@ object evaluator {
     for (stmt <- p.statements) {
       eval(stmt) match {
         case MReturn(v) => return v
+        case e@MError(m) => return e
         case r => result = r
       }
     }
@@ -66,7 +71,7 @@ object evaluator {
     for (stmt <- b.statements) {
       result = eval(stmt)
 
-      if (result != null && result.vtype == RETURN_OBJ) {
+      if (result != null && (result.vtype == RETURN_OBJ || result.vtype == ERROR_OBJ)) {
         return result
       }
     }
@@ -79,7 +84,7 @@ object evaluator {
   private def evalPrefixExpression(operator: String, right: MObject) = 
     if (operator == "!") evalBangOperatorExpression(right)
     else if (operator == "-") evalMinusPrefixOperatorExpression(right)
-    else NULL
+    else MError(s"unknown operator:$operator${right.vtype}")
 
   private def evalBangOperatorExpression(right: MObject) = right match {
     case TRUE => FALSE
@@ -89,7 +94,7 @@ object evaluator {
   }
 
   private def evalMinusPrefixOperatorExpression(right: MObject) = 
-    if (right.vtype != INTEGER_OBJ) NULL
+    if (right.vtype != INTEGER_OBJ) MError(s"unknown operator: -${right.vtype}")
     else {
       val i = right.asInstanceOf[MInteger]
       MInteger(-i.value)
@@ -102,8 +107,10 @@ object evaluator {
       nativeBoolToBooleanObj(left == right)
     else if (operator == "!=")
       nativeBoolToBooleanObj(left != right)
-    else
-      NULL
+    else if (left.vtype != right.vtype)
+      MError(s"type mismatch: ${left.vtype} $operator ${right.vtype}")
+    else 
+      MError(s"unknown operator: ${left.vtype} $operator ${right.vtype}")
   }
 
   private def evalIntegerInfixExpression(operator: String, left: MObject, right: MObject) = {
@@ -127,6 +134,9 @@ object evaluator {
     else if (operator == "!=")
       nativeBoolToBooleanObj(leftVal != rightVal)
     else
-      NULL
+      MError(s"unknown operator: ${left.vtype} $operator ${right.vtype}")
   }
+
+  private def isError(obj: MObject) = 
+    if (obj != null) obj.vtype == ERROR_OBJ else false
 }

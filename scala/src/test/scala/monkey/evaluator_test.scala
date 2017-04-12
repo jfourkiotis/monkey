@@ -117,6 +117,26 @@ class EvaluatorTest extends FlatSpec with Matchers {
     }
   }
 
+  "Error handling" should "provide a descriptive error" in {
+    case class TestCase(input: String, expectedMessage: String)
+    val tests = List(
+      TestCase("5 + true;", "type mismatch: INTEGER + BOOLEAN"),
+      TestCase("5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"),
+      TestCase("-true", "unknown operator: -BOOLEAN"),
+      TestCase("true + false;", "unknown operator: BOOLEAN + BOOLEAN"),
+      TestCase("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
+      TestCase("if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"),
+      TestCase("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN")
+    )
+
+    for (tt <- tests) {
+      val evaluated = testEval(tt.input)
+      evaluated shouldBe a [MError]
+      val err = evaluated.asInstanceOf[MError]
+      err.message should be (tt.expectedMessage)
+    }
+  }
+
   def testEval(input: String) = {
     val l = new Lexer(input)
     val p = new Parser(l)
