@@ -152,6 +152,32 @@ class EvaluatorTest extends FlatSpec with Matchers {
     }
   } 
 
+  "A Function object" should "be created for a Function Literal" in {
+    val input = "fn(x) { x + 2; };"
+    val evaluated = testEval(input)
+    evaluated shouldBe a [MFunction]
+    val func = evaluated.asInstanceOf[MFunction]
+    func.parameters.size should be (1)
+    func.parameters.head.toString should be ("x")
+    func.body.toString should be ("(x + 2)")
+  }
+
+  "A Function application" should "produce the correct result" in {
+    case class TestCase(input: String, expected: Long)
+    val tests = List(
+      TestCase("let identity = fn(x) { x; }; identity(5);", 5),
+      TestCase("let identity = fn(x) { return x; }; identity(5);", 5),
+      TestCase("let double = fn(x) { x * 2; }; double(5);", 10),
+      TestCase("let add = fn(x, y) { x + y; }; add(5, 5);", 10),
+      TestCase("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20),
+      TestCase("fn(x) { x; }(5)", 5)
+    )
+
+    for (tt <- tests) {
+      testIntegerObject(testEval(tt.input), tt.expected)
+    }
+  }
+
   def testEval(input: String) = {
     val l = new Lexer(input)
     val p = new Parser(l)

@@ -39,7 +39,55 @@ object evaluator {
         if (isError(right)) right else evalInfixExpression(in.operator, left, right)
       }
     }
+    case func: FunctionLiteral => MFunction(func.parameters, func.body, env)
+    case call: CallExpression => {
+      val function = eval(call.func, env)
+      if (isError(function)) function
+      else {
+        val args = evalExpressions(call.arguments, env)
+        if (args.size == 1 && isError(args.head)) args.head
+        else {
+          applyFunction(function, args)
+        }
+      }
+    }
+
     case _ => null
+  }
+
+  private def applyFunction(fn: MObject, args: List[MObject]) = 
+    fn match {
+      case f: MFunction => {
+        val extendedEnv = extendFunctionEnv(f, args)
+        val evaluated = eval(f.body, extendedEnv)
+        unwrapReturnValue(evaluated)
+      }
+      case _ => MError(s"not a function: ${fn.vtype}")
+    }
+
+  private def extendFunctionEnv(fn: MFunction, args: List[MObject]) = {
+    val env = Environment.newEnclosedEnvironment(fn.env)
+    fn.parameters.zip(args).foreach(p => env.set(p._1.value, p._2))
+    env
+  }
+
+  private def unwrapReturnValue(obj: MObject) = 
+    obj match {
+      case r:MReturn => r.value
+      case o@_ => o
+    }
+    
+
+  private def evalExpressions(expressions: List[Expression], env: Environment): List[MObject] = {
+    var evaluated = List[MObject]()
+    for (e <- expressions) {
+      val value = eval(e, env)
+      if (isError(value)) {
+        return List(value)
+      }
+      evaluated = evaluated :+ value 
+    }
+    evaluated
   }
 
   private def evalIdentifier(node: Identifier, env: Environment): MObject = 
