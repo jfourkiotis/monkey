@@ -126,7 +126,8 @@ class EvaluatorTest extends FlatSpec with Matchers {
       TestCase("true + false;", "unknown operator: BOOLEAN + BOOLEAN"),
       TestCase("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
       TestCase("if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"),
-      TestCase("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN")
+      TestCase("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN"),
+      TestCase("foobar", "identifier not found: foobar")
     )
 
     for (tt <- tests) {
@@ -137,11 +138,26 @@ class EvaluatorTest extends FlatSpec with Matchers {
     }
   }
 
+  "An identifier's value" should "be the same as its LET expression value" in {
+    case class TestCase(input: String, expected: Long)
+    val tests = List(
+      TestCase("let a = 5; a;", 5),
+      TestCase("let a = 5 * 5; a;", 25),
+      TestCase("let a = 5; let b = a; b;", 5),
+      TestCase("let a = 5; let b = a; let c = a + b + 5; c;", 15)
+    )
+
+    for (tt <- tests) {
+      testIntegerObject(testEval(tt.input), tt.expected)
+    }
+  } 
+
   def testEval(input: String) = {
     val l = new Lexer(input)
     val p = new Parser(l)
     val program = p.parseProgram()
-    eval(program)
+    val env = Environment()
+    eval(program, env)
   }
 
   def testIntegerObject(obj: MObject, expected: Long) {

@@ -23,6 +23,7 @@ object repl {
     import evaluator._
     import objects._
     val scanner = new java.util.Scanner(in)
+    val env = Environment()
 
     while (true) {
       out.print(PROMPT)
@@ -37,7 +38,7 @@ object repl {
         if (!errors.isEmpty) {
           printParserErrors(out, errors)
         } else {
-          val evaluated = eval(program)
+          val evaluated = eval(program, env)
           if (evaluated != null) {
             out.println(evaluated.inspect)
           }
@@ -48,6 +49,7 @@ object repl {
       }
     }
   }
+
   def printParserErrors(out: PrintStream, errors: List[String]) = {
     out.print(MONKEY_FACE)
     out.println("Woops! We ran into some monkey business here!")

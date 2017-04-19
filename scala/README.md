@@ -21,3 +21,5 @@
 * v0.3.6  If statement evaluation
 * v0.3.7  Return statement evaluation
 * v0.3.8  Error handling
+* v0.3.9  Let statement bindings
+

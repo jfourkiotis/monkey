@@ -7,55 +7,70 @@ object evaluator {
   val FALSE = MBoolean(false)
   val NULL = MNull
 
-  def eval(node: Node): MObject = node match {
-    case p: Program => evalProgram(p)
-    case b: BlockStatement => evalBlockStatement(b)
-    case f: IfExpression => evalIfExpression(f)
-    case e: ExpressionStatement => eval(e.expression)
+  def eval(node: Node, env: Environment): MObject = node match {
+    case p: Program => evalProgram(p, env)
+    case b: BlockStatement => evalBlockStatement(b, env)
+    case l: LetStatement => {
+      val value = eval(l.value, env)
+      if (isError(value)) {
+        value
+      } else {
+        env.set(l.name.value, value)
+      }
+    }
+    case f: IfExpression => evalIfExpression(f, env)
+    case e: ExpressionStatement => eval(e.expression, env)
     case i: IntegerLiteral => MInteger(i.value)
     case b: BooleanLiteral => nativeBoolToBooleanObj(b.value)
+    case i: Identifier => evalIdentifier(i, env)
     case r: ReturnStatement => {
-      val v = eval(r.value)
+      val v = eval(r.value, env)
       if (isError(v)) v else MReturn(v)
     }
     case pr: PrefixExpression => {
-      val right = eval(pr.right)
+      val right = eval(pr.right, env)
       if (isError(right)) right else evalPrefixExpression(pr.operator, right)
     }
     case in: InfixExpression => {
-      val left = eval(in.left)
+      val left = eval(in.left, env)
       if (isError(left)) left 
       else {
-        val right = eval(in.right)
+        val right = eval(in.right, env)
         if (isError(right)) right else evalInfixExpression(in.operator, left, right)
       }
     }
     case _ => null
   }
 
-  private def evalIfExpression(expression: IfExpression) = {
+  private def evalIdentifier(node: Identifier, env: Environment): MObject = 
+    env.get(node.value) match {
+      case Some(o) => o
+      case None => MError(s"identifier not found: ${node.value}")
+    }
+
+  private def evalIfExpression(expression: IfExpression, env: Environment) = {
     def isTruthy(obj: MObject) = 
       if (obj == NULL) false
       else if (obj == TRUE) true
       else if (obj == FALSE) false
       else true
 
-    val condition = eval(expression.condition)
+    val condition = eval(expression.condition, env)
     if (isError(condition)) condition
     else if (isTruthy(condition)) {
-      eval(expression.consequence)
+      eval(expression.consequence, env)
     } else if (expression.alternative != null) {
-      eval(expression.alternative)
+      eval(expression.alternative, env)
     } else {
       NULL
     }
   }
 
-  private def evalProgram(p: Program): MObject = {
+  private def evalProgram(p: Program, env: Environment): MObject = {
     var result: MObject = null
 
     for (stmt <- p.statements) {
-      eval(stmt) match {
+      eval(stmt, env) match {
         case MReturn(v) => return v
         case e@MError(m) => return e
         case r => result = r
@@ -65,11 +80,11 @@ object evaluator {
     result
   }
 
-  private def evalBlockStatement(b: BlockStatement): MObject = {
+  private def evalBlockStatement(b: BlockStatement, env: Environment): MObject = {
     var result: MObject = null
 
     for (stmt <- b.statements) {
-      result = eval(stmt)
+      result = eval(stmt, env)
 
       if (result != null && (result.vtype == RETURN_OBJ || result.vtype == ERROR_OBJ)) {
         return result
