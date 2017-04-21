@@ -14,6 +14,7 @@ object objects {
   val RETURN_OBJ: ObjectType = "RETURN_VALUE"
   val ERROR_OBJ: ObjectType = "ERROR"
   val FUNCTION_OBJ: ObjectType = "FUNCTION"
+  val STRING_OBJ: ObjectType = "STRING"
 
   case class MInteger(value: Long) extends MObject {
     val vtype = INTEGER_OBJ
@@ -38,6 +39,11 @@ object objects {
   case class MError(message: String) extends MObject {
     val vtype = ERROR_OBJ
     def inspect = "ERROR: " + message
+  }
+
+  case class MString(value: String) extends MObject {
+    val vtype = STRING_OBJ
+    def inspect = value
   }
 
   case class MFunction(parameters: List[Identifier], body: BlockStatement, env: Environment) extends MObject {

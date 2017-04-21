@@ -9,6 +9,7 @@ object token {
   // identifiers + literals
   val IDENT: TokenType = "IDENT"
   val INT  : TokenType = "INT"
+  val STRING: TokenType = "STRING"
 
   // operators
   val ASSIGN: TokenType = "="

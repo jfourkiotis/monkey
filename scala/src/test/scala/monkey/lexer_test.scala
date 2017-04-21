@@ -24,6 +24,9 @@ class LexerSpec extends FlatSpec with Matchers {
 
     10 == 10;
     10 != 9;
+
+    "foobar"
+    "foo bar"
     """
 
     val tests = List(
@@ -100,6 +103,8 @@ class LexerSpec extends FlatSpec with Matchers {
       (NOT_EQ, "!="),
       (INT, "9"),
       (SEMICOLON, ";"),
+      (STRING, "foobar"),
+      (STRING, "foo bar"),
       (EOF, "")
     )
 

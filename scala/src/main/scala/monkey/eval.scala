@@ -51,6 +51,7 @@ object evaluator {
         }
       }
     }
+    case s:StringLiteral => MString(s.value)
 
     case _ => null
   }

@@ -95,6 +95,24 @@ class ParserSpec extends FlatSpec with Matchers {
     }
   }
 
+  "A Parser" should "parse a string literal" in {
+    val input = "\"hello world\""
+
+    val lexer = new Lexer(input)
+    val parser = new Parser(lexer)
+    val program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    program should not be (null)
+    program.statements.size should be (1)
+
+    program.statements.head shouldBe a [ExpressionStatement]
+    val expressionStmt = program.statements.head.asInstanceOf[ExpressionStatement]
+    expressionStmt.expression shouldBe a [StringLiteral]
+    val str = expressionStmt.expression.asInstanceOf[StringLiteral]
+    str.value should be ("hello world")
+  }
+
   "A Parser" should "parse prefix operators" in {
     val prefixTests = List(
       ("!5;", "!", 5),

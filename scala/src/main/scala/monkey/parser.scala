@@ -51,6 +51,7 @@ class Parser(l: Lexer) {
   registerPrefix(token.LPAREN, parseGroupedExpression)
   registerPrefix(token.IF, parseIfExpression)
   registerPrefix(token.FUNCTION, parseFunctionLiteral)
+  registerPrefix(token.STRING, parseStringLiteral)
   //
   registerInfix(token.PLUS, parseInfixExpression)
   registerInfix(token.MINUS, parseInfixExpression)
@@ -269,6 +270,8 @@ class Parser(l: Lexer) {
       }
     }
   }
+
+  private def parseStringLiteral(): Expression = StringLiteral(curToken, curToken.literal)
 
   private def parseFunctionLiteral(): Expression = {
     val current = curToken

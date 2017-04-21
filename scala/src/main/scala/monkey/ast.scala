@@ -71,6 +71,12 @@ case class IntegerLiteral(token: Token, value: Long) extends Expression {
   override def tokenLiteral = token.literal
   override lazy val toString = value.toString
 }
+
+case class StringLiteral(token: Token, value: String) extends Expression {
+  override def tokenLiteral = token.literal
+  override val toString = token.literal
+}
+
 // !5, -10
 case class PrefixExpression(token: Token, operator: String, right: Expression) extends Expression {
   override def tokenLiteral = token.literal

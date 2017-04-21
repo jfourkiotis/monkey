@@ -42,6 +42,15 @@ class Lexer(val input: String) {
     input.slice(pos, position)
   }
 
+  private def readString(): String = {
+    val pos = position + 1
+    readChar()
+    while (ch != '"') {
+      readChar()
+    }
+    input.slice(pos, position)
+  }
+
   private def skipWhitespace() {
     while (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
       readChar()
@@ -79,6 +88,10 @@ class Lexer(val input: String) {
       case '>' => Token(GT, ch)
       case '{' => Token(LBRACE, ch)
       case '}' => Token(RBRACE, ch)
+      case '"' => {
+        val literal = readString()
+        Token(STRING, literal)
+      }
       case '\0' => Token(EOF, "")
       case _   => {
         if (isLetter(ch)) {

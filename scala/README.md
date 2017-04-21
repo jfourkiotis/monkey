@@ -23,3 +23,4 @@
 * v0.3.8  Error handling
 * v0.3.9  Let statement bindings
 * v0.3.10 Function application
+* v0.4.2  Support for string literals
