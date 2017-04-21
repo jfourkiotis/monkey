@@ -171,10 +171,22 @@ object evaluator {
       nativeBoolToBooleanObj(left == right)
     else if (operator == "!=")
       nativeBoolToBooleanObj(left != right)
+    else if (left.vtype == STRING_OBJ && right.vtype == STRING_OBJ)
+      evalStringInfixExpression(operator, left, right)
     else if (left.vtype != right.vtype)
       MError(s"type mismatch: ${left.vtype} $operator ${right.vtype}")
     else 
       MError(s"unknown operator: ${left.vtype} $operator ${right.vtype}")
+  }
+
+  private def evalStringInfixExpression(operator: String, left: MObject, right: MObject) = {
+    if (operator != "+") {
+      MError(s"unknown operator: ${left.vtype} ${operator} ${right.vtype}")
+    } else {
+      val leftVal = left.asInstanceOf[MString]
+      val rightVal = right.asInstanceOf[MString]
+      MString(leftVal.value + rightVal.value)
+    }
   }
 
   private def evalIntegerInfixExpression(operator: String, left: MObject, right: MObject) = {

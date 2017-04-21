@@ -24,3 +24,4 @@
 * v0.3.9  Let statement bindings
 * v0.3.10 Function application
 * v0.4.2  Support for string literals
+* v0.4.2b String concatenation (by using operator +)

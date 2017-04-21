@@ -127,7 +127,8 @@ class EvaluatorTest extends FlatSpec with Matchers {
       TestCase("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
       TestCase("if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"),
       TestCase("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN"),
-      TestCase("foobar", "identifier not found: foobar")
+      TestCase("foobar", "identifier not found: foobar"),
+      TestCase("\"Hello\" - \"World\"", "unknown operator: STRING - STRING")
     )
 
     for (tt <- tests) {
@@ -176,6 +177,15 @@ class EvaluatorTest extends FlatSpec with Matchers {
     for (tt <- tests) {
       testIntegerObject(testEval(tt.input), tt.expected)
     }
+  }
+
+  "The operator + applied on 2 strings" should "concatenate its arguments" in {
+    val input = "\"Hello\" + \" \" + \"World!\""
+
+    val evaluated = testEval(input)
+    evaluated shouldBe a [MString]
+    val str = evaluated.asInstanceOf[MString]
+    str.value should be ("Hello World!")
   }
 
   def testEval(input: String) = {
