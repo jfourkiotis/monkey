@@ -188,6 +188,32 @@ class EvaluatorTest extends FlatSpec with Matchers {
     str.value should be ("Hello World!")
   }
 
+  "The len builtin function" should "return the size of a string" in {
+    case class TestCase[T](input: String, expected: T)
+    val tests1 = List(
+      TestCase("len(\"\")", 0),
+      TestCase("len(\"four\")", 4),
+      TestCase("len(\"hello world\")", 11)
+    )
+
+    for (tt <- tests1) {
+      val evaluated = testEval(tt.input)
+      testIntegerObject(evaluated, tt.expected)
+    }
+
+    val tests2 = List(
+      TestCase("len(1)", "argument to `len` not supported, got INTEGER"),
+      TestCase("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1")
+    )
+
+    for (tt <- tests2) {
+      val evaluated = testEval(tt.input)
+      evaluated shouldBe a [MError]
+      val err = evaluated.asInstanceOf[MError]
+      err.message should be (tt.expected)
+    }
+  }
+
   def testEval(input: String) = {
     val l = new Lexer(input)
     val p = new Parser(l)

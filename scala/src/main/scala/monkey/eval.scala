@@ -63,6 +63,7 @@ object evaluator {
         val evaluated = eval(f.body, extendedEnv)
         unwrapReturnValue(evaluated)
       }
+      case b: MBuiltin => b.fn(args:_*)
       case _ => MError(s"not a function: ${fn.vtype}")
     }
 
@@ -94,7 +95,12 @@ object evaluator {
   private def evalIdentifier(node: Identifier, env: Environment): MObject = 
     env.get(node.value) match {
       case Some(o) => o
-      case None => MError(s"identifier not found: ${node.value}")
+      case None => {
+        builtins.get(node.value) match {
+          case Some(b) => b
+          case None => MError(s"identifier not found: ${node.value}")
+        }
+      }
     }
 
   private def evalIfExpression(expression: IfExpression, env: Environment) = {

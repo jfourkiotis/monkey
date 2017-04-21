@@ -25,3 +25,4 @@
 * v0.3.10 Function application
 * v0.4.2  Support for string literals
 * v0.4.2b String concatenation (by using operator +)
+* v0.4.3  Builtin functions support (added `len` as a builtin)

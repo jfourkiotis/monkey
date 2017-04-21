@@ -15,6 +15,9 @@ object objects {
   val ERROR_OBJ: ObjectType = "ERROR"
   val FUNCTION_OBJ: ObjectType = "FUNCTION"
   val STRING_OBJ: ObjectType = "STRING"
+  val BUILTIN_OBJ: ObjectType = "BUILTIN"
+
+  type BuiltinFunction = (MObject*) => MObject
 
   case class MInteger(value: Long) extends MObject {
     val vtype = INTEGER_OBJ
@@ -62,4 +65,19 @@ object objects {
      buf.toString
     }
   }
+
+  case class MBuiltin(fn: BuiltinFunction) extends MObject {
+    val vtype = BUILTIN_OBJ
+    val inspect = "builtin function"
+  }
+
+  val builtins = Map(
+    "len" -> MBuiltin { 
+      args => 
+        if (args.size != 1) MError(s"wrong number of arguments. got=${args.size}, want=1")
+        else args.head match {
+          case s:MString => MInteger(s.value.size)
+          case _ => MError(s"argument to `len` not supported, got ${args.head.vtype}")
+        }
+    })
 }
