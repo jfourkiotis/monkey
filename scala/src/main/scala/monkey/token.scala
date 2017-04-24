@@ -32,6 +32,8 @@ object token {
   val RPAREN: TokenType = ")"
   val LBRACE: TokenType = "{"
   val RBRACE: TokenType = "}"
+  val LBRACKET: TokenType = "["
+  val RBRACKET: TokenType = "]"
 
   // keywords
   val FUNCTION: TokenType = "FUNCTION"

@@ -16,6 +16,7 @@ object objects {
   val FUNCTION_OBJ: ObjectType = "FUNCTION"
   val STRING_OBJ: ObjectType = "STRING"
   val BUILTIN_OBJ: ObjectType = "BUILTIN"
+  val ARRAY_OBJ: ObjectType = "ARRAY"
 
   type BuiltinFunction = (MObject*) => MObject
 
@@ -71,12 +72,28 @@ object objects {
     val inspect = "builtin function"
   }
 
+  case class MArray(elements: Array[MObject]) extends MObject {
+    val vtype = ARRAY_OBJ
+    lazy val inspect = {
+      val buf = new StringBuilder
+
+      val elems = elements.map(_.inspect).mkString(", ")
+
+      buf += '['
+      buf ++= elems
+      buf += ']'
+
+      buf.toString
+    }
+  }
+
   val builtins = Map(
     "len" -> MBuiltin { 
       args => 
         if (args.size != 1) MError(s"wrong number of arguments. got=${args.size}, want=1")
         else args.head match {
           case s:MString => MInteger(s.value.size)
+          case a:MArray => MInteger(a.elements.size)
           case _ => MError(s"argument to `len` not supported, got ${args.head.vtype}")
         }
     })

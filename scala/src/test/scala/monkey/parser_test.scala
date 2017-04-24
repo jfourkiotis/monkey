@@ -199,7 +199,9 @@ class ParserSpec extends FlatSpec with Matchers {
       ("!(true == true)", "(!(true == true))"),
       ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
       ("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
-      ("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))")
+      ("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"),
+      ("a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"),
+      ("add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))")
     )
 
    tests.foreach( tt => {
@@ -315,6 +317,46 @@ class ParserSpec extends FlatSpec with Matchers {
     testLiteralExpression(callExpression.arguments.head, 1)
     testInfixExpression(callExpression.arguments.tail.head, 2, "*", 3)
     testInfixExpression(callExpression.arguments.tail.tail.head, 4, "+", 5)
+  }
+
+  "A Parser" should "parse array literals" in {
+    val input = "[1, 2 * 2, 3 + 3]"
+    val lexer = new Lexer(input)
+    val parser = new Parser(lexer)
+    val program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    program should not be (null)
+    program.statements.length should be (1)
+
+    program.statements.head shouldBe a [ExpressionStatement]
+    val expressionStmt = program.statements.head.asInstanceOf[ExpressionStatement]
+    expressionStmt.expression shouldBe a [ArrayLiteral]
+    val arrayLiteral = expressionStmt.expression.asInstanceOf[ArrayLiteral]
+    arrayLiteral.elements.size should be (3)
+
+    testIntegerLiteral(arrayLiteral.elements.drop(0).head, 1)
+    testInfixExpression(arrayLiteral.elements.drop(1).head, 2, "*", 2)
+    testInfixExpression(arrayLiteral.elements.drop(2).head, 3, "+", 3)
+  }
+
+  "A Parser" should "parse index expressions" in {
+    val input = "myArray[1 + 1]"
+    val lexer = new Lexer(input)
+    val parser = new Parser(lexer)
+    val program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    program should not be (null)
+    program.statements.length should be (1)
+
+    program.statements.head shouldBe a [ExpressionStatement]
+    val expressionStmt = program.statements.head.asInstanceOf[ExpressionStatement]
+    expressionStmt.expression shouldBe a [IndexExpression]
+    val arrayLiteral = expressionStmt.expression.asInstanceOf[IndexExpression]
+
+    testIdentifier(arrayLiteral.left , "myArray")
+    testInfixExpression(arrayLiteral.index, 1, "+", 1)
   }
 
   def testLetStatement(stmt: Statement, name: String): Boolean = {

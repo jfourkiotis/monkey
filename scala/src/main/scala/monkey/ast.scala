@@ -175,3 +175,33 @@ case class CallExpression(token: Token, func: Expression, arguments: List[Expres
     buf.toString
   }
 }
+
+case class ArrayLiteral(token: Token, elements: List[Expression]) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = {
+    val buf = new StringBuilder
+
+    val elems = elements.map(_.toString).mkString(", ")
+    buf += '['
+    buf ++= elems
+    buf += ']'
+
+    buf.toString
+  }
+}
+
+case class IndexExpression(token: Token, left: Expression, index: Expression) extends Expression {
+  override def tokenLiteral = token.literal
+  override lazy val toString = {
+    val buf = new StringBuilder
+
+    buf += '('
+    buf ++= left.toString
+    buf += '['
+    buf ++= index.toString
+    buf += ']'
+    buf += ')'
+    
+    buf.toString
+  }
+}

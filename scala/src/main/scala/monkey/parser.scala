@@ -10,7 +10,7 @@ class Parser(l: Lexer) {
     val PRODUCT = 4 // *
     val PREFIX  = 5 // -X or !X
     val CALL    = 6 // myFunction(X)
-
+    val INDEX   = 7 // myArray[X]
   }
 
   val precedences = Map(
@@ -22,7 +22,8 @@ class Parser(l: Lexer) {
     token.MINUS -> Precedence.SUM,
     token.SLASH -> Precedence.PRODUCT,
     token.ASTERISK -> Precedence.PRODUCT,
-    token.LPAREN -> Precedence.CALL
+    token.LPAREN -> Precedence.CALL,
+    token.LBRACKET -> Precedence.INDEX
   )
 
   type PrefixParseFn = () => Expression
@@ -52,6 +53,7 @@ class Parser(l: Lexer) {
   registerPrefix(token.IF, parseIfExpression)
   registerPrefix(token.FUNCTION, parseFunctionLiteral)
   registerPrefix(token.STRING, parseStringLiteral)
+  registerPrefix(token.LBRACKET, parseArrayLiteral)
   //
   registerInfix(token.PLUS, parseInfixExpression)
   registerInfix(token.MINUS, parseInfixExpression)
@@ -62,7 +64,7 @@ class Parser(l: Lexer) {
   registerInfix(token.LT, parseInfixExpression)
   registerInfix(token.GT, parseInfixExpression)
   registerInfix(token.LPAREN, parseCallExpression)
-  
+  registerInfix(token.LBRACKET, parseIndexExpression)
 
   private def nextToken() {
     curToken = peekToken
@@ -190,33 +192,18 @@ class Parser(l: Lexer) {
 
   private def parseCallExpression(func: Expression) = {
     val current = curToken
-    val arguments = parseCallArguments()
+    val arguments = parseExpressionList(token.RPAREN)
     CallExpression(current, func, arguments)
   }
 
-  private def parseCallArguments(): List[Expression] = {
-    import scala.collection.mutable.ListBuffer
+  private def parseIndexExpression(left: Expression) = {
+    val current = curToken
 
-    val args = ListBuffer[Expression]()
+    nextToken()
 
-    if (peekTokenIs(token.RPAREN)) {
-      nextToken()
-      args.toList
-    } else
-    {
-      nextToken()
-      args += parseExpression(Precedence.LOWEST)
-      while (peekTokenIs(token.COMMA)) {
-        nextToken()
-        nextToken()
-        args += parseExpression(Precedence.LOWEST)
-      }
-      if (!expectPeek(token.RPAREN)) {
-        null
-      } else {
-        args.toList
-      }
-    }
+    val index = parseExpression(Precedence.LOWEST)
+
+    if (!expectPeek(token.RBRACKET)) null else IndexExpression(current, left, index)
   }
 
   private def parseIntegerLiteral(): IntegerLiteral = 
@@ -272,6 +259,39 @@ class Parser(l: Lexer) {
   }
 
   private def parseStringLiteral(): Expression = StringLiteral(curToken, curToken.literal)
+
+  private def parseArrayLiteral(): Expression = {
+    val current = curToken
+
+    val elements = parseExpressionList(token.RBRACKET)
+
+    if (elements == null) null
+    else 
+      ArrayLiteral(curToken, elements)
+  }
+
+  private def parseExpressionList(end: token.TokenType): List[Expression] = {
+    import scala.collection.mutable.ListBuffer
+    val l = ListBuffer[Expression]()
+    
+    if (peekTokenIs(end)) {
+      nextToken()
+      l.toList
+    } else {
+      nextToken()
+      l += parseExpression(Precedence.LOWEST)
+      while (peekTokenIs(token.COMMA)) {
+        nextToken()
+        nextToken()
+        l += parseExpression(Precedence.LOWEST)
+      }
+      if (!expectPeek(end)) {
+        null
+      } else {
+        l.toList
+      }
+    }
+  }
 
   private def parseFunctionLiteral(): Expression = {
     val current = curToken

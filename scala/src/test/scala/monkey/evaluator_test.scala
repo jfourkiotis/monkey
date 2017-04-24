@@ -214,6 +214,19 @@ class EvaluatorTest extends FlatSpec with Matchers {
     }
   }
 
+  "The evaluator" should "evaluate array literals" in {
+    val input = "[1, 2 * 2, 3 + 3]"
+
+    val evaluated = testEval(input)
+    evaluated shouldBe a [MArray]
+    val arr = evaluated.asInstanceOf[MArray]
+
+    arr.elements.size should be (3)
+    testIntegerObject(arr.elements(0), 1)
+    testIntegerObject(arr.elements(1), 4)
+    testIntegerObject(arr.elements(2), 6)
+  }
+
   def testEval(input: String) = {
     val l = new Lexer(input)
     val p = new Parser(l)

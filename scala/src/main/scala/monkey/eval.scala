@@ -52,8 +52,41 @@ object evaluator {
       }
     }
     case s:StringLiteral => MString(s.value)
+    case a:ArrayLiteral => {
+      val elems = evalExpressions(a.elements, env)
+      if (elems.size == 1 && isError(elems.head)) null else MArray(elems.toArray)
+    }
+    case i:IndexExpression => {
+      val left = eval(i.left, env)
+      if (isError(left)) {
+        left
+      } else {
+        val index = eval(i.index, env)
+        if (isError(index)) {
+          index
+        } else {
+          evalIndexExpression(left, index)
+        }
+      }
+    }
 
     case _ => null
+  }
+
+  private def evalIndexExpression(left: MObject, index: MObject) = 
+    if (left.vtype == ARRAY_OBJ && index.vtype == INTEGER_OBJ) 
+      evalArrayIndexExpression(left, index)
+    else MError(s"index operator not supported: ${left.vtype}")
+
+  private def evalArrayIndexExpression(array: MObject, index: MObject) = {
+    val arr = array.asInstanceOf[MArray]
+    val idx = index.asInstanceOf[MInteger]
+    val max = arr.elements.size - 1
+    if (idx.value < 0 || idx.value > max) {
+      MNull
+    } else {
+      arr.elements(idx.value.toInt)
+    }
   }
 
   private def applyFunction(fn: MObject, args: List[MObject]) = 

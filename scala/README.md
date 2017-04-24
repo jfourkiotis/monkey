@@ -26,3 +26,4 @@
 * v0.4.2  Support for string literals
 * v0.4.2b String concatenation (by using operator +)
 * v0.4.3  Builtin functions support (added `len` as a builtin)
+* v0.4.4  Support for arrays and array literals

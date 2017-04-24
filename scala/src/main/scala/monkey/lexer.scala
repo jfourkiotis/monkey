@@ -88,6 +88,8 @@ class Lexer(val input: String) {
       case '>' => Token(GT, ch)
       case '{' => Token(LBRACE, ch)
       case '}' => Token(RBRACE, ch)
+      case '[' => Token(LBRACKET, ch)
+      case ']' => Token(RBRACKET, ch)
       case '"' => {
         val literal = readString()
         Token(STRING, literal)
