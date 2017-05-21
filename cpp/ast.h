@@ -9,12 +9,21 @@
 #include <cstdint>
 
 #include "token.h"
+#include "ast_visitor.h"
 
 namespace ast {
+
+#define ACCEPT_VISITOR(visitor) \
+    void AcceptVisitor(AstVisitor &v) const override {\
+        return v.Visit(*this);\
+    }
+
 // every AST node must implement the Node interface
 class Node {
 public:
     virtual ~Node() {}
+
+    virtual void AcceptVisitor(AstVisitor &v) const = 0;
     virtual std::string TokenLiteral() const = 0;
     virtual std::string ToString() const = 0;
 };//~ Node
@@ -25,8 +34,10 @@ class Expression: public Node {}; // dummy interface
 // The root node of every AST is the Program node
 class Program final: public Node {
 public:
-    using Statements = std::vector<std::unique_ptr<Statement>>;
-    explicit Program(Statements statements) : statements_(move(statements)) {}
+    using StatementList = std::vector<std::unique_ptr<Statement>>;
+    explicit Program(StatementList statements) : statements_(move(statements)) {}
+
+    ACCEPT_VISITOR(AstVisitor);
 
     std::string TokenLiteral() const override {
         return statements_.empty() ? "" : statements_[0]->TokenLiteral();
@@ -40,19 +51,25 @@ public:
         return buf;
     }
 
-    Statements::size_type size() const { return statements_.size(); }
+    StatementList::size_type size() const { return statements_.size(); }
 
     const Statement* operator[](size_t index) const {
         return statements_[index].get();
     }
+    
+    const StatementList& Statements() const { return statements_; }
+
 private:
-    Statements statements_;
+    StatementList statements_;
 };//~ Program
 
 // To hold the identifier of a Let statement, we use the Identifier class
 class Identifier final: public Expression {
 public:
     Identifier(token::Token token, const std::string& value) : token_(token), value_(value) {}
+    
+    ACCEPT_VISITOR(AstVisitor);
+
     std::string TokenLiteral() const override { return token_.literal; }
     std::string Value() const { return value_; }
     std::string ToString() const override { return Value(); }
@@ -67,7 +84,9 @@ class LetStatement final: public Statement {
 public:
     LetStatement(token::Token token, std::unique_ptr<Identifier> name, std::unique_ptr<Expression> expr)
         : token_(token), name_(std::move(name)), expression_(std::move(expr)) {}
-    
+   
+    ACCEPT_VISITOR(AstVisitor);
+
     std::string TokenLiteral() const override { return token_.literal; }
 
     std::string ToString() const override {
@@ -96,6 +115,8 @@ class ReturnStatement final: public Statement {
 public:
     ReturnStatement(token::Token token, std::unique_ptr<Expression> expression)
         : token_(token), expression_(std::move(expression)) {}
+
+    ACCEPT_VISITOR(AstVisitor);
     
     std::string TokenLiteral() const override { return token_.literal; }
 
@@ -121,6 +142,8 @@ public:
     ExpressionStatement(token::Token token, std::unique_ptr<Expression> expression)
         : token_(token), expression_(std::move(expression)) {}
 
+    ACCEPT_VISITOR(AstVisitor);
+
     std::string TokenLiteral() const override { return token_.literal; }
     
     std::string ToString() const override { return expression_ ? expression_->ToString() : ""; }
@@ -134,6 +157,8 @@ private:
 class IntegerLiteral final: public Expression {
 public:
     IntegerLiteral(token::Token token, int64_t value) : token_(token), value_(value) {}
+
+    ACCEPT_VISITOR(AstVisitor);
 
     std::string TokenLiteral() const override { return token_.literal; }
 
@@ -149,6 +174,8 @@ class PrefixExpression final: public Expression {
 public:
     PrefixExpression(token::Token tok, const std::string& op, std::unique_ptr<Expression> right)
         : token_(tok), op_(op), right_(std::move(right)) {}
+
+    ACCEPT_VISITOR(AstVisitor);
 
     std::string TokenLiteral() const override { return token_.literal; }
 
@@ -176,6 +203,8 @@ class InfixExpression final: public Expression {
 public:
     InfixExpression(token::Token tok, std::unique_ptr<Expression> left, const std::string& op, std::unique_ptr<Expression> right)
         : token_(tok), left_(std::move(left)), op_(op), right_(std::move(right)) {}
+
+    ACCEPT_VISITOR(AstVisitor);
 
     std::string TokenLiteral() const override { return token_.literal; }
 
@@ -208,6 +237,8 @@ class BooleanLiteral final: public Expression {
 public:
     BooleanLiteral(token::Token tok, bool val) : token_(tok), value_(val) {}
 
+    ACCEPT_VISITOR(AstVisitor);
+
     std::string TokenLiteral() const override { return token_.literal; }
 
     std::string ToString() const override { return token_.literal; }
@@ -223,6 +254,8 @@ public:
     using Statements = std::vector<std::unique_ptr<Statement>>;
     BlockStatement(token::Token tok, Statements statements)
         : token_(tok), statements_(std::move(statements)) {}
+
+    ACCEPT_VISITOR(AstVisitor);
 
     std::string TokenLiteral() const override { return token_.literal; }
 
@@ -250,6 +283,8 @@ class IfExpression final: public Expression {
 public:
     IfExpression(token::Token tok, std::unique_ptr<Expression> condition, std::unique_ptr<BlockStatement> consequence, std::unique_ptr<BlockStatement> alternative)
         : token_(tok), condition_(std::move(condition)), consequence_(std::move(consequence)), alternative_(std::move(alternative)) {}
+
+    ACCEPT_VISITOR(AstVisitor);
 
     std::string TokenLiteral() const override { return token_.literal; }
 
@@ -293,6 +328,8 @@ public:
     FunctionLiteral(token::Token tok, ParameterList params, std::unique_ptr<BlockStatement> body)
         : token_(tok), parameters_(std::move(params)), body_(std::move(body)) {}
 
+    ACCEPT_VISITOR(AstVisitor);
+
     std::string TokenLiteral() const override { return token_.literal; }
 
     std::string ToString() const override {
@@ -329,6 +366,8 @@ public:
     using ArgumentList = std::vector<std::unique_ptr<Expression>>;
     CallExpression(token::Token tok, std::unique_ptr<Expression> function, ArgumentList arguments)
         : token_(tok), function_(std::move(function)), arguments_(std::move(arguments)) {}
+
+    ACCEPT_VISITOR(AstVisitor);
 
     std::string TokenLiteral() const override { return token_.literal; }
 

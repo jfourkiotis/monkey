@@ -9,6 +9,8 @@
 #include "../lexer.h"
 #include "../ast.h"
 #include "../parser.h"
+#include "../object.h"
+#include "../eval.h"
 
 // Lexer tests
 TEST_CASE("lexer", "[lexer]") {
@@ -158,9 +160,9 @@ TEST_CASE("LetStatement", "[Parsing,LetStatement]") {
     struct {
         string expected_identifier;
     } tests[] = {
-        "x",
-        "y",
-        "foobar",
+        {"x"},
+        {"y"},
+        {"foobar"},
     };
 
     auto testLetStatement = [](auto stmt, auto str) -> bool {
@@ -212,7 +214,7 @@ TEST_CASE("ToString", "[Ast]") {
     using namespace ast;
     using std::move;
 
-    Program::Statements ls;
+    Program::StatementList ls;
     ls.push_back(
             make_unique<LetStatement>(
                     Token(LET, "let"),
@@ -590,4 +592,54 @@ TEST_CASE("CallExpression", "[Parsing]") {
     testLiteralExpression(args[0].get(), static_cast<int64_t>(1));
     testInfixExpression(args[1].get(), 2, "*", 3);
     testInfixExpression(args[2].get(), 4, "+", 5);
+}
+
+static std::shared_ptr<MObject> testEval(const std::string& input) {
+    lexer::Lexer l{input};
+    Parser p{l};
+    auto program = p.ParseProgram();
+    REQUIRE(program);
+    checkParserErrors(p);
+    return Eval(*program);
+}
+
+template<typename MType, typename RType>
+static void testLiteralObject(const std::shared_ptr<MObject>& obj, RType expected) {
+    auto result = std::static_pointer_cast<MType>(obj);
+    REQUIRE(result != nullptr);
+    REQUIRE(result->Value() == expected);
+}
+
+TEST_CASE("EvalIntegerExpression", "[Evaluator]") {
+    struct {
+        std::string input;
+        int64_t expected;
+    } tests[] = {
+        { "5",  5},
+        {"10", 10},
+    };
+
+    for (const auto& tt : tests) {
+        auto evaluated = testEval(tt.input);
+        testLiteralObject<MInteger>(evaluated, tt.expected);
+    }
+}
+
+TEST_CASE("EvalBangOperator", "[Evaluator]") {
+    struct {
+        std::string input;
+        bool expected;
+    } tests[] = {
+        {"!true"  , false},
+        {"!false" , true },
+        {"!5"     , false},
+        {"!!true" , true },
+        {"!!false", false},
+        {"!!5"    , true }
+    };
+    
+    for (const auto& tt : tests) {
+        auto evaluated = testEval(tt.input);
+        testLiteralObject<MBoolean>(evaluated, tt.expected);
+    }
 }

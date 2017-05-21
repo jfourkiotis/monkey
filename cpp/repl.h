@@ -3,10 +3,12 @@
 
 #include <string>
 #include <iostream>
+#include <iomanip>
 
 #include "token.h"
 #include "lexer.h"
 #include "parser.h"
+#include "eval.h"
 
 const std::string PROMPT = ">> ";
 const std::string MONKEY_FACE = R"(
@@ -48,8 +50,12 @@ inline void Start(std::istream& in, std::ostream& out) {
             PrintParserErrors(out, errors);
             continue;
         }
-
-        out << program->ToString() << '\n';
+        
+        auto evaluated = Eval(*program);
+        
+        if (evaluated) {
+            out << std::boolalpha << evaluated->Inspect() << '\n';
+        }
     }
 }
 

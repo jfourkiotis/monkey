@@ -13,3 +13,5 @@ __dummy.html
 __test__*__
 .gitignore
 .idea
+build_xcode
+.vscode

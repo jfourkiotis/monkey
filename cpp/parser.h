@@ -105,7 +105,7 @@ public:
         using std::make_unique;
         using std::move;
 
-        ast::Program::Statements statements;
+        ast::Program::StatementList statements;
 
         while (curToken_.type != token::EOF_) {
             auto stmt = parseStatement();

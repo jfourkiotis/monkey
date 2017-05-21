@@ -34,6 +34,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 set(HEADERS
+    ast_visitor.h
+    eval.h
     object.h
     token.h
     lexer.h
