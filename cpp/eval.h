@@ -63,9 +63,18 @@ public:
     }
 
     void Visit(const BlockStatement& node) override {
+        _EvalStatements(node.Statements());
     }
 
     void Visit(const IfExpression& node) override {
+        auto condition = Eval(*node.Condition());
+        if (_IsTruthy(condition)) {
+            result.push_back(Eval(*node.Consequence()));
+        } else if (node.Alternative()) {
+            result.push_back(Eval(*node.Alternative()));
+        } else {
+            result.push_back(M_NULL);
+        }
     }
 
     void Visit(const FunctionLiteral& node) override  {
@@ -79,7 +88,19 @@ public:
         return result.back(); 
     }
 private:
-    void _EvalStatements(const Program::StatementList& statements) {
+    bool _IsTruthy(const std::shared_ptr<MObject>& obj) const {
+        if (obj == M_NULL) {
+            return false;
+        } else if (obj == M_TRUE) {
+            return true;
+        } else if (obj == M_FALSE) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    
+    void _EvalStatements(const StatementList& statements) {
         std::vector<std::shared_ptr<MObject>> tmp(std::move(result));
         for(auto &&stmt : statements) {
             stmt->AcceptVisitor(*this);

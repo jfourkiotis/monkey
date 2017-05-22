@@ -30,11 +30,13 @@ public:
 
 class Statement : public Node {}; // dummy interface
 class Expression: public Node {}; // dummy interface
+    
+    
+using StatementList = std::vector<std::unique_ptr<Statement>>;
 
 // The root node of every AST is the Program node
 class Program final: public Node {
 public:
-    using StatementList = std::vector<std::unique_ptr<Statement>>;
     explicit Program(StatementList statements) : statements_(move(statements)) {}
 
     ACCEPT_VISITOR(AstVisitor);
@@ -251,8 +253,7 @@ private:
 
 class BlockStatement final: public Statement {
 public:
-    using Statements = std::vector<std::unique_ptr<Statement>>;
-    BlockStatement(token::Token tok, Statements statements)
+    BlockStatement(token::Token tok, StatementList statements)
         : token_(tok), statements_(std::move(statements)) {}
 
     ACCEPT_VISITOR(AstVisitor);
@@ -269,14 +270,16 @@ public:
         return buf;
     }
 
-    Statements::size_type size() const { return statements_.size(); }
+    StatementList::size_type size() const { return statements_.size(); }
 
     const Statement* operator[](size_t index) const {
         return statements_[index].get();
     }
+    
+    const StatementList& Statements() const { return statements_; }
 private:
     token::Token token_;
-    Statements statements_;
+    StatementList statements_;
 };
 
 class IfExpression final: public Expression {

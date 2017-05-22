@@ -15,3 +15,4 @@
 * v0.2.8e The parser can handle function literals
 * v0.3.5a Initial implementation of the evaluator (not much working yet)
 * v0.3.5b More infix operators
+* v0.3.6  If expression evaluation

@@ -214,7 +214,7 @@ TEST_CASE("ToString", "[Ast]") {
     using namespace ast;
     using std::move;
 
-    Program::StatementList ls;
+    StatementList ls;
     ls.push_back(
             make_unique<LetStatement>(
                     Token(LET, "let"),
@@ -653,5 +653,36 @@ TEST_CASE("EvalBangOperator", "[Evaluator]") {
     for (const auto& tt : tests) {
         auto evaluated = testEval(tt.input);
         testLiteralObject<MBoolean>(evaluated, tt.expected);
+    }
+}
+
+TEST_CASE("EvalIfElseExpressions", "[Evaluator]") {
+    struct {
+        std::string input;
+        int64_t expected;
+    } tests1[] = {
+        {"if (true) { 10 }", 10},
+        {"if (1) { 10 }", 10},
+        {"if (1 < 2) { 10 }", 10},
+        {"if (1 > 2) { 10 } else { 20 }", 20},
+        {"if (1 < 2) { 10 } else { 20 }", 10},
+    };
+    
+    for (const auto& tt : tests1) {
+        auto evaluated = testEval(tt.input);
+        testLiteralObject<MInteger>(evaluated, tt.expected);
+    }
+    
+    struct {
+        std::string input;
+    } tests2[] = {
+        { "if (false) { 10 }" },
+        { "if (1 > 2) { 10 }" },
+        
+    };
+    
+    for (const auto& tt : tests2) {
+        auto evaluated = testEval(tt.input);
+        REQUIRE(evaluated == M_NULL);
     }
 }

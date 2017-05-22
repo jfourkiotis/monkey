@@ -105,7 +105,7 @@ public:
         using std::make_unique;
         using std::move;
 
-        ast::Program::StatementList statements;
+        ast::StatementList statements;
 
         while (curToken_.type != token::EOF_) {
             auto stmt = parseStatement();
@@ -323,7 +323,7 @@ private:
 
     std::unique_ptr<ast::BlockStatement> parseBlockStatement() {
         auto current = curToken_;
-        ast::BlockStatement::Statements statements;
+        ast::StatementList statements;
 
         nextToken();
         while (!curTokenIs(token::RBRACE)) {
