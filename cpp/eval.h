@@ -45,6 +45,9 @@ public:
     }
 
     void Visit(const InfixExpression& node) override {
+        auto left = Eval(*node.Left());
+        auto right= Eval(*node.Right());
+        result.push_back(_EvalInfixExpression(node.Operator(), left, right));
     }
     
     void Visit(const IntegerLiteral& node) override {
@@ -116,6 +119,41 @@ private:
         }
         auto i = std::static_pointer_cast<MInteger>(obj);
         return std::make_shared<MInteger>(-i->Value());
+    }
+    
+    std::shared_ptr<MObject> _EvalInfixExpression(const std::string& op, const std::shared_ptr<MObject>& left, const std::shared_ptr<MObject>& right) {
+        if (left->Type() == ObjectType::INTEGER_OBJ && right->Type() == ObjectType::INTEGER_OBJ) {
+            return _EvalIntegerInfixExpression(op, left, right);
+        } else if (op == "==") {
+            return left == right ? M_TRUE : M_FALSE;
+        } else if (op == "!=") {
+            return left != right ? M_TRUE : M_FALSE;
+        } else {
+            return M_NULL;
+        }
+    }
+    
+    std::shared_ptr<MObject> _EvalIntegerInfixExpression(const std::string& op, const std::shared_ptr<MObject>& left, const std::shared_ptr<MObject>& right) {
+        const std::shared_ptr<MInteger>& lv = std::static_pointer_cast<MInteger>(left);
+        const std::shared_ptr<MInteger>& rv = std::static_pointer_cast<MInteger>(right);
+        if (op == "+") {
+            return std::make_shared<MInteger>(lv->Value() + rv->Value());
+        } else if (op == "-") {
+            return std::make_shared<MInteger>(lv->Value() - rv->Value());
+        } else if (op == "*") {
+            return std::make_shared<MInteger>(lv->Value() * rv->Value());
+        } else if (op == "/") {
+            return std::make_shared<MInteger>(lv->Value() / rv->Value());
+        } else if (op == "<") {
+            return lv->Value()  < rv->Value() ? M_TRUE : M_FALSE;
+        } else if (op == ">") {
+            return lv->Value()  > rv->Value() ? M_TRUE : M_FALSE;
+        } else if (op == "==") {
+            return lv->Value() == rv->Value() ? M_TRUE : M_FALSE;
+        } else if (op == "!=") {
+            return lv->Value() != rv->Value() ? M_TRUE : M_FALSE;
+        }
+        return M_NULL;
     }
     
     std::vector<std::shared_ptr<MObject>> result;

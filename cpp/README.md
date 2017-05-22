@@ -13,4 +13,5 @@
 * v0.2.8c The parser can handle if expressions 
 * v0.2.8d The parser can handle call expressions and literals
 * v0.2.8e The parser can handle function literals
-* v0.3    Initial implementation of the evaluator (not much working yet)
+* v0.3.5a Initial implementation of the evaluator (not much working yet)
+* v0.3.5b More infix operators
