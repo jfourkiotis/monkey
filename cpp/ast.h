@@ -134,6 +134,8 @@ public:
         buf.append(1, ';');
         return buf;
     }
+    
+    const Expression* Value() const { return expression_.get(); }
 private:
     token::Token token_;
     std::unique_ptr<Expression> expression_;

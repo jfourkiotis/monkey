@@ -8,6 +8,7 @@ enum class ObjectType {
     INTEGER_OBJ,
     BOOLEAN_OBJ,
     NULL_OBJ,
+    RETURN_VALUE_OBJ,
 };
 
 class MObject {
@@ -39,5 +40,16 @@ public:
     MNull() : MObject(ObjectType::NULL_OBJ) {}
     std::string Inspect() const override { return "null"; }
 };//~ MNull
-#endif // MONKEY_OBJECT_H_INCLUDED 
+
+class MReturn : public MObject {
+public:
+    explicit MReturn(const std::shared_ptr<MObject>& val)
+    : MObject(ObjectType::RETURN_VALUE_OBJ), value_(val) {}
+
+    std::string Inspect() const override { return value_->Inspect(); }
+    std::shared_ptr<MObject> Value() { return value_; }
+private:
+    std::shared_ptr<MObject> value_;
+};
+#endif // MONKEY_OBJECT_H_INCLUDED
 

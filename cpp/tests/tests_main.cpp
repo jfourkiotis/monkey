@@ -686,3 +686,20 @@ TEST_CASE("EvalIfElseExpressions", "[Evaluator]") {
         REQUIRE(evaluated == M_NULL);
     }
 }
+
+TEST_CASE("EvalReturnStatement", "[Evaluator]") {
+    struct {
+        std::string input;
+        int64_t expected;
+    } tests[] = {
+        {"return 10;", 10},
+        {"return 10; 9;", 10},
+        {"return 2 * 5; 9;", 10},
+        {"9; return 2 * 5; 9;", 10}
+    };
+    
+    for (const auto& tt: tests) {
+        auto evaluated = testEval(tt.input);
+        testLiteralObject<MInteger>(evaluated, tt.expected);
+    }
+}

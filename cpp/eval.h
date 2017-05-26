@@ -23,7 +23,7 @@ class EvalVisitor final : public AstVisitor {
 public:
 
     void Visit(const Program &node) override {
-        _EvalStatements(node.Statements());
+        _EvalProgram(node);
     };
 
     void Visit(const Identifier& node) override {
@@ -33,6 +33,7 @@ public:
     }
 
     void Visit(const ReturnStatement& node) override {
+        result.push_back(std::make_shared<MReturn>(Eval(*node.Value())));
     }
 
     void Visit(const ExpressionStatement& node) override {
@@ -63,7 +64,7 @@ public:
     }
 
     void Visit(const BlockStatement& node) override {
-        _EvalStatements(node.Statements());
+        _EvalBlockStatement(node);
     }
 
     void Visit(const IfExpression& node) override {
@@ -100,16 +101,29 @@ private:
         }
     }
     
-    void _EvalStatements(const StatementList& statements) {
-        std::vector<std::shared_ptr<MObject>> tmp(std::move(result));
-        for(auto &&stmt : statements) {
-            stmt->AcceptVisitor(*this);
+    void _EvalProgram(const Program& program) {
+        std::shared_ptr<MObject> final;
+        for (const auto& stmt : program.Statements()) {
+            final = Eval(*stmt);
+            if (final->Type() == ObjectType::RETURN_VALUE_OBJ) {
+                auto r = std::static_pointer_cast<MReturn>(final);
+                result.push_back(r->Value());
+                return;
+            }
         }
-        
-        if (!result.empty()) {
-            tmp.push_back(result.back());
+        result.push_back(final);
+    }
+    
+    void _EvalBlockStatement(const BlockStatement& block) {
+        std::shared_ptr<MObject> final;
+        for (const auto& stmt : block.Statements()) {
+            final = Eval(*stmt);
+            if (final && final->Type() == ObjectType::RETURN_VALUE_OBJ) {
+                result.push_back(final);
+                return;
+            }
         }
-        result.swap(tmp);
+        result.push_back(final);
     }
     
     std::shared_ptr<MObject> _EvalPrefixExpression(const std::string& op, const std::shared_ptr<MObject>& obj) {
