@@ -703,3 +703,46 @@ TEST_CASE("EvalReturnStatement", "[Evaluator]") {
         testLiteralObject<MInteger>(evaluated, tt.expected);
     }
 }
+
+TEST_CASE("EvalErrorHandling", "[Evaluator]") {
+    struct {
+        std::string input;
+        std::string expected;
+    } tests[] = {
+        {
+            "5 + true;",
+            "type mismatch: INTEGER + BOOLEAN"
+        },
+        {
+            "5 + true; 5;",
+            "type mismatch: INTEGER + BOOLEAN"
+        },
+        {
+            "-true;",
+            "unknown operator: -BOOLEAN"
+        },
+        {
+            "true + false;",
+            "unknown operator: BOOLEAN + BOOLEAN"
+        },
+        {
+            "5; TRUE + FALSE; 5",
+            "unknown operator: BOOLEAN + BOOLEAN"
+        },
+        {
+            "if (10 > 1) { true + false; }",
+            "unknown operator: BOOLEAN + BOOLEAN"
+        },
+        {
+            "if (10 > 1) {"
+            "  if (10 > 1) {"
+            "     return true + false;"
+            "  }"
+            "  return 1;"
+            "}",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        }
+    };
+    
+    
+}

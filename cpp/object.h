@@ -3,13 +3,30 @@
 
 #include <string>
 #include <memory>
+#include <cassert>
 
+
+#define ALL_OBJECT_TYPES \
+    PROCESS(INTEGER) \
+    PROCESS(BOOLEAN) \
+    PROCESS(NULL) \
+    PROCESS(RETURN_VALUE) \
+    PROCESS(ERROR) \
+
+#define PROCESS(a) a##_OBJ,
 enum class ObjectType {
-    INTEGER_OBJ,
-    BOOLEAN_OBJ,
-    NULL_OBJ,
-    RETURN_VALUE_OBJ,
+    ALL_OBJECT_TYPES
 };
+#undef PROCESS
+
+
+#define PROCESS(a) #a,
+inline const char *GetObjectTypeName(ObjectType type)
+{
+    static const char* names[] = { ALL_OBJECT_TYPES nullptr };
+    return names[static_cast<size_t>(type)];
+}
+#undef PROCESS
 
 class MObject {
 public:
@@ -50,6 +67,16 @@ public:
     std::shared_ptr<MObject> Value() { return value_; }
 private:
     std::shared_ptr<MObject> value_;
-};
+};//~ MReturn
+
+class MError : public MObject {
+public:
+    explicit MError(const std::string& message)
+    : MObject(ObjectType::ERROR_OBJ), message_(message) {}
+    
+    std::string Inspect() const override { return message_; }
+private:
+    std::string message_;
+};// MError
 #endif // MONKEY_OBJECT_H_INCLUDED
 

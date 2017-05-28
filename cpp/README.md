@@ -17,3 +17,4 @@
 * v0.3.5b More infix operators
 * v0.3.6  If expression evaluation
 * v0.3.7  Return statement evaluation
+* v0.3.8  Added a basic error handling
