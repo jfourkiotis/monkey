@@ -75,6 +75,7 @@ public:
     : MObject(ObjectType::ERROR_OBJ), message_(message) {}
     
     std::string Inspect() const override { return message_; }
+    std::string Message() const { return message_; }
 private:
     std::string message_;
 };// MError

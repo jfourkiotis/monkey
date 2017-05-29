@@ -726,7 +726,7 @@ TEST_CASE("EvalErrorHandling", "[Evaluator]") {
             "unknown operator: BOOLEAN + BOOLEAN"
         },
         {
-            "5; TRUE + FALSE; 5",
+            "5; true + false; 5",
             "unknown operator: BOOLEAN + BOOLEAN"
         },
         {
@@ -744,5 +744,13 @@ TEST_CASE("EvalErrorHandling", "[Evaluator]") {
         }
     };
     
-    
+    for (const auto& tt : tests) {
+        auto evaluated = testEval(tt.input);
+        
+        REQUIRE(evaluated);
+        REQUIRE(evaluated->Type() == ObjectType::ERROR_OBJ);
+        
+        auto err = std::static_pointer_cast<MError>(evaluated);
+        REQUIRE(err->Message() == tt.expected);
+    }
 }

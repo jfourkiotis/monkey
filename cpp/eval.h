@@ -187,6 +187,11 @@ private:
             return left == right ? M_TRUE : M_FALSE;
         } else if (op == "!=") {
             return left != right ? M_TRUE : M_FALSE;
+        } else if (left->Type() != right->Type()) {
+            return _NewError("type mismatch: %s %s %s",
+                             GetObjectTypeName(left->Type()),
+                             op.c_str(),
+                             GetObjectTypeName(right->Type()));
         } else {
             return _NewError("unknown operator: %s %s %s",
                              GetObjectTypeName(left->Type()),
