@@ -107,6 +107,7 @@ public:
         return buf;
     }
     const Identifier* Name() const { return name_.get(); }
+    const Expression* Value() const { return expression_.get(); }
 private:
     token::Token token_;
     std::unique_ptr<Identifier> name_;

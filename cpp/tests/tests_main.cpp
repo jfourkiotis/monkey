@@ -600,7 +600,9 @@ static std::shared_ptr<MObject> testEval(const std::string& input) {
     auto program = p.ParseProgram();
     REQUIRE(program);
     checkParserErrors(p);
-    return Eval(*program);
+    
+    Environment env;
+    return Eval(*program, &env);
 }
 
 template<typename MType, typename RType>
@@ -741,7 +743,11 @@ TEST_CASE("EvalErrorHandling", "[Evaluator]") {
             "  return 1;"
             "}",
             "unknown operator: BOOLEAN + BOOLEAN",
-        }
+        },
+        {
+            "foobar",
+            "identifier not found: foobar",
+        },
     };
     
     for (const auto& tt : tests) {
@@ -752,5 +758,21 @@ TEST_CASE("EvalErrorHandling", "[Evaluator]") {
         
         auto err = std::static_pointer_cast<MError>(evaluated);
         REQUIRE(err->Message() == tt.expected);
+    }
+}
+
+TEST_CASE("EvalLetStatement", "[Evaluator]") {
+    struct {
+        std::string input;
+        int64_t expected;
+    } tests[] = {
+        {"let a = 5; a;", 5},
+        {"let a = 5 * 5; a;", 25},
+        {"let a = 5; let b = a; b;", 5},
+        {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+    };
+    
+    for (const auto& tt : tests) {
+        testLiteralObject<MInteger>(testEval(tt.input), tt.expected);
     }
 }

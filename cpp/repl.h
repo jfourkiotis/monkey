@@ -9,6 +9,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "eval.h"
+#include "env.h"
 
 const std::string PROMPT = ">> ";
 const std::string MONKEY_FACE = R"(
@@ -36,6 +37,7 @@ void PrintParserErrors(std::ostream& out, const Parser::ErrorList &errors)
 }
 
 inline void Start(std::istream& in, std::ostream& out) {
+    Environment env;
     std::string line;
     while (true) {
         out << PROMPT;
@@ -51,7 +53,7 @@ inline void Start(std::istream& in, std::ostream& out) {
             continue;
         }
         
-        auto evaluated = Eval(*program);
+        auto evaluated = Eval(*program, &env);
         
         if (evaluated) {
             out << std::boolalpha << evaluated->Inspect() << '\n';

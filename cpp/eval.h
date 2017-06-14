@@ -8,8 +8,9 @@
 #include "ast.h"
 #include "ast_visitor.h"
 #include "object.h"
+#include "env.h"
 
-std::shared_ptr<MObject> Eval(const ast::Node& node);
+std::shared_ptr<MObject> Eval(const ast::Node& node, Environment *env);
 
 namespace {
 
@@ -22,18 +23,28 @@ std::shared_ptr<MNull> M_NULL = std::make_shared<MNull>();
 class EvalVisitor final : public AstVisitor {
 public:
 
+    explicit EvalVisitor(Environment* env) : env_(env) {}
+    
     void Visit(const Program &node) override {
         _EvalProgram(node);
     };
 
     void Visit(const Identifier& node) override {
+        result.push_back(_EvalIdentifier(node, env_));
     };
 
     void Visit(const LetStatement& node) override {
+        auto val = Eval(*node.Value(), env_);
+        if (_IsError(val)) {
+            result.push_back(val);
+        } else {
+            env_->Set(node.Name()->Value(), val);
+            result.push_back(nullptr);
+        }
     }
 
     void Visit(const ReturnStatement& node) override {
-        auto tmp = Eval(*node.Value());
+        auto tmp = Eval(*node.Value(), env_);
         if (_IsError(tmp)) {
             result.push_back(tmp);
         } else {
@@ -46,7 +57,7 @@ public:
     }
 
     void Visit(const PrefixExpression& node) override {
-        auto tmp = Eval(*node.Right());
+        auto tmp = Eval(*node.Right(), env_);
         if (_IsError(tmp)) {
             result.push_back(tmp);
         } else {
@@ -55,12 +66,12 @@ public:
     }
 
     void Visit(const InfixExpression& node) override {
-        auto left = Eval(*node.Left());
+        auto left = Eval(*node.Left(), env_);
         if (_IsError(left)) {
             result.push_back(left);
             return;
         }
-        auto right= Eval(*node.Right());
+        auto right= Eval(*node.Right(), env_);
         if (_IsError(right)) {
             result.push_back(right);
             return;
@@ -85,15 +96,15 @@ public:
     }
 
     void Visit(const IfExpression& node) override {
-        auto condition = Eval(*node.Condition());
+        auto condition = Eval(*node.Condition(), env_);
         if (_IsError(condition)) {
             result.push_back(condition);
             return;
         }
         if (_IsTruthy(condition)) {
-            result.push_back(Eval(*node.Consequence()));
+            result.push_back(Eval(*node.Consequence(), env_));
         } else if (node.Alternative()) {
-            result.push_back(Eval(*node.Alternative()));
+            result.push_back(Eval(*node.Alternative(), env_));
         } else {
             result.push_back(M_NULL);
         }
@@ -125,7 +136,10 @@ private:
     void _EvalProgram(const Program& program) {
         std::shared_ptr<MObject> final;
         for (const auto& stmt : program.Statements()) {
-            final = Eval(*stmt);
+            final = Eval(*stmt, env_);
+            
+            if (!final) continue;
+            
             if (final->Type() == ObjectType::RETURN_VALUE_OBJ) {
                 auto r = std::static_pointer_cast<MReturn>(final);
                 result.push_back(r->Value());
@@ -140,7 +154,7 @@ private:
     void _EvalBlockStatement(const BlockStatement& block) {
         std::shared_ptr<MObject> final;
         for (const auto& stmt : block.Statements()) {
-            final = Eval(*stmt);
+            final = Eval(*stmt, env_);
             if (final && (final->Type() == ObjectType::RETURN_VALUE_OBJ || final->Type() == ObjectType::ERROR_OBJ)) {
                 result.push_back(final);
                 return;
@@ -226,6 +240,15 @@ private:
                          GetObjectTypeName(right->Type()));
     }
     
+    std::shared_ptr<MObject> _EvalIdentifier(const Identifier& node, Environment *env)
+    {
+        auto r = env->Get(node.Value());
+        if (r == nullptr) {
+            return _NewError("identifier not found: %s", node.Value().c_str());
+        }
+        return r;
+    }
+    
     template<typename ...Args>
     std::shared_ptr<MError> _NewError(const std::string& format, Args ...args) {
         auto size = snprintf(nullptr, 0, format.c_str(), args...) + 1;
@@ -239,13 +262,13 @@ private:
     }
     
     std::vector<std::shared_ptr<MObject>> result;
-
+    Environment* env_;
 };//~ EvalVisitor
 
 }
 
-std::shared_ptr<MObject> Eval(const ast::Node& node) {
-    EvalVisitor visitor;
+std::shared_ptr<MObject> Eval(const ast::Node& node, Environment* env) {
+    EvalVisitor visitor(env);
     node.AcceptVisitor(visitor);
     return visitor.Result();
 }

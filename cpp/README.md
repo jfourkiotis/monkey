@@ -18,3 +18,4 @@
 * v0.3.6  If expression evaluation
 * v0.3.7  Return statement evaluation
 * v0.3.8  Added a basic error handling
+* v0.3.9  Bindings and environments
