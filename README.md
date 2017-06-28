@@ -11,7 +11,7 @@ reference implementation found in the book and it is being ported currently in `
 #### Current status
 * `Go`   : completed
 * `Cpp`  : lexer
-* `Scala`: lexer
+* `Scala`: completed (support for dictionaries is not implemented)
 * `D`    : lexer
 
 ### How do I get set up? ###
