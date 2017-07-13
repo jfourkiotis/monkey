@@ -15,6 +15,7 @@
 * dictionaries
 
 #### changelog
+* v0.5.6      - Support for macros
 * v0.4.6      - REPL : `puts` builtin function
 * v0.4.4b     - REPL : support for hash literals and indexing
 * v0.4.4a     - REPL : support for array literals

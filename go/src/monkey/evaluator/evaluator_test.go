@@ -464,8 +464,8 @@ func TestHashLiterals(t *testing.T) {
 	"one": 10 - 9,
 	two: 1 + 1,
 	"thr" + "ee": 6 / 2,
-	4: 4
-	true: 5
+	4: 4,
+	true: 5,
 	false: 6
     }`
 
