@@ -6,13 +6,12 @@ An interpreter implementation for the `Monkey` programming language in various l
 
 This repository contains implementations for the `Monkey` programming language described in
 the book *Writing an Interpreter in Go* by *Thorsten Ball*. The `Go` implementation is the 
-reference implementation found in the book and it is being ported currently in `C++`, `Scala` and `D`.
+reference implementation found in the book and it is being ported currently in `C++`, `Scala`.
 
 #### Current status
-* `Go`   : completed
-* `Cpp`  : lexer
-* `Scala`: completed (support for dictionaries is not implemented)
-* `D`    : lexer
+* `Go`   : completed, macros are supported
+* `Scala`: completed (support for dictionaries is not implemented, neither macros)
+* `C++`  : mostly incomplete
 
 ### How do I get set up? ###
 
